@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESL Word Challenge Snake</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background-color: #1e1e2e;
+            color: #cdd6f4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 { margin: 0 0 10px 0; color: #89b4fa; }
+
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 600px;
+            background: #313244;
+            padding: 12px 20px;
+            border-radius: 8px 8px 0 0;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .target-banner {
+            padding: 4px 12px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+        }
+
+        canvas {
+            border: 3px solid #45475a;
+            background-color: #11111b;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .controls-hint {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #a6adc8;
+            text-align: center;
+        }
+
+        /* Modal Overlay for Teacher Settings */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .settings-panel {
+            background: #313244;
+            padding: 25px;
+            border-radius: 12px;
+            width: 420px;
+            max-width: 90%;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            border: 1px solid #45475a;
+            position: relative;
+        }
+
+        .settings-panel h2 {
+            margin-top: 0;
+            font-size: 1.3rem;
+            color: #a6e3a1;
+            border-bottom: 1px solid #45475a;
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.85rem;
+            color: #bac2de;
+        }
+
+        textarea {
+            width: 100%;
+            height: 55px;
+            background: #1e1e2e;
+            color: #cdd6f4;
+            border: 1px solid #45475a;
+            border-radius: 4px;
+            padding: 6px;
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        select, input[type="number"], input[type="password"] {
+            width: 100%;
+            background: #1e1e2e;
+            color: #cdd6f4;
+            border: 1px solid #45475a;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            background: #89b4fa;
+            color: #11111b;
+            border: none;
+            padding: 10px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button.btn-secondary {
+            background: #45475a;
+            color: #cdd6f4;
+        }
+
+        button.btn-teacher {
+            background: #313244;
+            color: #a6e3a1;
+            border: 1px solid #a6e3a1;
+            margin-top: 15px;
+            width: auto;
+            padding: 8px 16px;
+        }
+
+        button:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+    <h1>ESL Grammar Snake</h1>
+
+    <div class="main-panel">
+        <div class="hud">
+            <div>Score: <span id="score">0</span></div>
+            <div>Target: <span id="target" class="target-banner">NOUN</span></div>
+            <div>Lives: <span id="lives">3</span></div>
+        </div>
+        <canvas id="gameCanvas" width="600" height="500"></canvas>
+        <div class="controls-hint">Use <b>Arrow Keys</b> or <b>W, A, S, D</b> to navigate the snake.</div>
+        
+        <button class="btn-teacher" onclick="openSettings()">⚙️ Teacher Settings</button>
+    </div>
+
+    <!-- Hidden Teacher Settings Modal -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="settings-panel">
+            <h2>⚙️ Teacher Settings</h2>
+            
+            <div class="form-group">
+                <label for="teacherPin">Teacher PIN / Password (optional):</label>
+                <input type="password" id="teacherPin" placeholder="Leave blank for no PIN">
+            </div>
+
+            <div class="form-group">
+                <label for="speedSelect">Snake Speed:</label>
+                <select id="speedSelect">
+                    <option value="160">Slow (Beginner)</option>
+                    <option value="120" selected>Normal</option>
+                    <option value="80">Fast (Advanced)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="foodCountInput">Words Spawned at Once:</label>
+                <input type="number" id="foodCountInput" value="5" min="3" max="8">
+            </div>
+
+            <div class="form-group">
+                <label for="nounsInput">Nouns (comma-separated):</label>
+                <textarea id="nounsInput">cat, dog, house, book, tree, apple, car, teacher, student, computer, phone, city</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="verbsInput">Verbs (comma-separated):</label>
+                <textarea id="verbsInput">run, jump, eat, sleep, write, read, think, speak, drive, play, dance, swim</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="adjInput">Adjectives (comma-separated):</label>
+                <textarea id="adjInput">happy, fast, big, blue, smart, cold, heavy, bright, loud, soft, green, quick</textarea>
+            </div>
+
+            <div class="btn-group">
+                <button onclick="applySettings()">Save & Restart</button>
+                <button class="btn-secondary" onclick="closeSettings()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const gridSize = 20;
+        const cols = canvas.width / gridSize;
+        const rows = canvas.height / gridSize;
+
+        // Default Word Bank
+        let wordBank = {
+            NOUN: ['cat', 'dog', 'house', 'book', 'tree', 'apple', 'car', 'teacher', 'student', 'computer', 'phone', 'city'],
+            VERB: ['run', 'jump', 'eat', 'sleep', 'write', 'read', 'think', 'speak', 'drive', 'play', 'dance', 'swim'],
+            ADJECTIVE: ['happy', 'fast', 'big', 'blue', 'smart', 'cold', 'heavy', 'bright', 'loud', 'soft', 'green', 'quick']
+        };
+
+        const targetTypes = ['NOUN', 'VERB', 'ADJECTIVE'];
+        let currentTarget = 'NOUN';
+        let maxFoodCount = 5;
+        let teacherPin = '';
+
+        let snake = [];
+        let dx = gridSize;
+        let dy = 0;
+        let score = 0;
+        let lives = 3;
+        let gameSpeed = 120;
+        let gameInterval = null;
+        let isGameOver = false;
+        let isPaused = false;
+
+        let activeFoods = [];
+
+        function initGame() {
+            snake = [
+                { x: 10 * gridSize, y: 10 * gridSize },
+                { x: 9 * gridSize, y: 10 * gridSize },
+                { x: 8 * gridSize, y: 10 * gridSize }
+            ];
+            dx = gridSize;
+            dy = 0;
+            score = 0;
+            lives = 3;
+            isGameOver = false;
+
+            document.getElementById('score').textContent = score;
+            document.getElementById('lives').textContent = lives;
+
+            pickNewTarget();
+            spawnAllFood();
+
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(gameLoop, gameSpeed);
+        }
+
+        function pickNewTarget() {
+            currentTarget = targetTypes[Math.floor(Math.random() * targetTypes.length)];
+            const targetEl = document.getElementById('target');
+            targetEl.textContent = currentTarget;
+            
+            if(currentTarget === 'NOUN') {
+                targetEl.style.background = '#f38ba8';
+                targetEl.style.color = '#11111b';
+            } else if(currentTarget === 'VERB') {
+                targetEl.style.background = '#a6e3a1';
+                targetEl.style.color = '#11111b';
+            } else if(currentTarget === 'ADJECTIVE') {
+                targetEl.style.background = '#89b4fa';
+                targetEl.style.color = '#11111b';
+            }
+        }
+
+        function spawnAllFood() {
+            activeFoods = [];
+            const correctCount = Math.max(1, Math.floor(maxFoodCount / 2));
+
+            for (let i = 0; i < maxFoodCount; i++) {
+                let foodType;
+                if (i < correctCount) {
+                    foodType = currentTarget;
+                } else {
+                    const wrongTypes = targetTypes.filter(t => t !== currentTarget);
+                    foodType = wrongTypes[Math.floor(Math.random() * wrongTypes.length)];
+                }
+
+                const wordsList = wordBank[foodType];
+                const randomWord = wordsList[Math.floor(Math.random() * wordsList.length)];
+                
+                const pos = getRandomPosition();
+                activeFoods.push({
+                    x: pos.x,
+                    y: pos.y,
+                    word: randomWord,
+                    type: foodType
+                });
+            }
+        }
+
+        function getRandomPosition() {
+            let newX, newY, collision;
+            do {
+                collision = false;
+                newX = Math.floor(Math.random() * (cols - 4) + 2) * gridSize;
+                newY = Math.floor(Math.random() * (rows - 4) + 2) * gridSize;
+
+                for (let part of snake) {
+                    if (part.x === newX && part.y === newY) collision = true;
+                }
+
+                for (let food of activeFoods) {
+                    if (Math.abs(food.x - newX) < gridSize * 3 && Math.abs(food.y - newY) < gridSize * 2) {
+                        collision = true;
+                    }
+                }
+            } while (collision);
+
+            return { x: newX, y: newY };
+        }
+
+        function gameLoop() {
+            if (isGameOver || isPaused) return;
+
+            moveSnake();
+            if (checkSelfCollision() || checkWallCollision()) {
+                handleDeath();
+                return;
+            }
+
+            checkFoodCollision();
+            draw();
+        }
+
+        function moveSnake() {
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+            snake.unshift(head);
+            snake.pop();
+        }
+
+        function checkWallCollision() {
+            const head = snake[0];
+            return head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height;
+        }
+
+        function checkSelfCollision() {
+            const head = snake[0];
+            for (let i = 1; i < snake.length; i++) {
+                if (snake[i].x === head.x && snake[i].y === head.y) return true;
+            }
+            return false;
+        }
+
+        function checkFoodCollision() {
+            const head = snake[0];
+
+            for (let i = 0; i < activeFoods.length; i++) {
+                const food = activeFoods[i];
+                
+                if (Math.abs(head.x - food.x) < gridSize * 1.5 && Math.abs(head.y - food.y) < gridSize * 1.2) {
+                    if (food.type === currentTarget) {
+                        score += 10;
+                        document.getElementById('score').textContent = score;
+                        snake.push({ ...snake[snake.length - 1] });
+
+                        pickNewTarget();
+                        spawnAllFood();
+                    } else {
+                        lives--;
+                        document.getElementById('lives').textContent = lives;
+                        if (snake.length > 2) snake.pop();
+
+                        activeFoods.splice(i, 1);
+                        const wrongTypes = targetTypes.filter(t => t !== currentTarget);
+                        const foodType = wrongTypes[Math.floor(Math.random() * wrongTypes.length)];
+                        const wordsList = wordBank[foodType];
+                        const randomWord = wordsList[Math.floor(Math.random() * wordsList.length)];
+                        const pos = getRandomPosition();
+
+                        activeFoods.push({
+                            x: pos.x,
+                            y: pos.y,
+                            word: randomWord,
+                            type: foodType
+                        });
+
+                        if (lives <= 0) endGame();
+                    }
+                    break;
+                }
+            }
+        }
+
+        function handleDeath() {
+            lives--;
+            document.getElementById('lives').textContent = lives;
+            if (lives <= 0) {
+                endGame();
+            } else {
+                snake = [
+                    { x: 10 * gridSize, y: 10 * gridSize },
+                    { x: 9 * gridSize, y: 10 * gridSize },
+                    { x: 8 * gridSize, y: 10 * gridSize }
+                ];
+                dx = gridSize;
+                dy = 0;
+            }
+        }
+
+        function endGame() {
+            isGameOver = true;
+            clearInterval(gameInterval);
+            draw();
+        }
+
+        // CARTOON SNAKE DRAWING LOGIC
+        function drawCartoonSnake() {
+            // 1. Draw Body Segments (from tail to head)
+            for (let i = snake.length - 1; i > 0; i--) {
+                const part = snake[i];
+                const cx = part.x + gridSize / 2;
+                const cy = part.y + gridSize / 2;
+
+                // Make tail slightly smaller, body full size
+                const radius = (i === snake.length - 1) ? 7 : 9;
+
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#a6e3a1'; // Bright cartoon green
+                ctx.fill();
+                ctx.strokeStyle = '#40a02b'; // Darker green outline
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.closePath();
+            }
+
+            // 2. Draw Cartoon Head
+            const head = snake[0];
+            const hx = head.x + gridSize / 2;
+            const hy = head.y + gridSize / 2;
+
+            // Head Base Circle
+            ctx.beginPath();
+            ctx.arc(hx, hy, 11, 0, Math.PI * 2);
+            ctx.fillStyle = '#a6e3a1';
+            ctx.fill();
+            ctx.strokeStyle = '#40a02b';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.closePath();
+
+            // Calculate eye/tongue orientation based on direction (dx, dy)
+            let eyeOffsetX1 = -4, eyeOffsetY1 = -4;
+            let eyeOffsetX2 = 4, eyeOffsetY2 = -4;
+            let tongueX = hx, tongueY = hy;
+            let tongueEndX = hx, tongueEndY = hy;
+
+            if (dx > 0) { // Right
+                eyeOffsetX1 = 2; eyeOffsetY1 = -5;
+                eyeOffsetX2 = 2; eyeOffsetY2 = 5;
+                tongueX = hx + 10; tongueY = hy;
+                tongueEndX = hx + 18; tongueEndY = hy;
+            } else if (dx < 0) { // Left
+                eyeOffsetX1 = -2; eyeOffsetY1 = -5;
+                eyeOffsetX2 = -2; eyeOffsetY2 = 5;
+                tongueX = hx - 10; tongueY = hy;
+                tongueEndX = hx - 18; tongueEndY = hy;
+            } else if (dy > 0) { // Down
+                eyeOffsetX1 = -5; eyeOffsetY1 = 2;
+                eyeOffsetX2 = 5; eyeOffsetY2 = 2;
+                tongueX = hx; tongueY = hy + 10;
+                tongueEndX = hx; tongueEndY = hy + 18;
+            } else if (dy < 0) { // Up
+                eyeOffsetX1 = -5; eyeOffsetY1 = -2;
+                eyeOffsetX2 = 5; eyeOffsetY2 = -2;
+                tongueX = hx; tongueY = hy - 10;
+                tongueEndX = hx; tongueEndY = hy - 18;
+            }
+
+            // Draw Flickering Forked Tongue
+            ctx.beginPath();
+            ctx.moveTo(tongueX, tongueY);
+            ctx.lineTo(tongueEndX, tongueEndY);
+            ctx.strokeStyle = '#f38ba8'; // Pink tongue
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.closePath();
+
+            // Draw Googly Eyes (White circles)
+            ctx.beginPath();
+            ctx.arc(hx + eyeOffsetX1, hy + eyeOffsetY1, 4.5, 0, Math.PI * 2);
+            ctx.arc(hx + eyeOffsetX2, hy + eyeOffsetY2, 4.5, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.closePath();
+
+            // Draw Eye Pupils (Black dots)
+            ctx.beginPath();
+            ctx.arc(hx + eyeOffsetX1 + (dx/gridSize)*1.5, hy + eyeOffsetY1 + (dy/gridSize)*1.5, 2, 0, Math.PI * 2);
+            ctx.arc(hx + eyeOffsetX2 + (dx/gridSize)*1.5, hy + eyeOffsetY2 + (dy/gridSize)*1.5, 2, 0, Math.PI * 2);
+            ctx.fillStyle = '#11111b';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function draw() {
+            // Background
+            ctx.fillStyle = '#11111b';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Active Words
+            ctx.font = 'bold 15px Arial';
+            ctx.textAlign = 'center';
+
+            for (let food of activeFoods) {
+                ctx.fillStyle = '#313244';
+                ctx.fillRect(food.x - 20, food.y - 12, 50, 20);
+
+                ctx.fillStyle = '#fab387';
+                ctx.fillText(food.word, food.x + 5, food.y + 2);
+            }
+
+            // Draw Cartoon Snake
+            drawCartoonSnake();
+
+            // Game Over Screen
+            if (isGameOver) {
+                ctx.fillStyle = 'rgba(17, 17, 27, 0.85)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = '#f38ba8';
+                ctx.font = 'bold 32px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 20);
+
+                ctx.fillStyle = '#cdd6f4';
+                ctx.font = '18px Arial';
+                ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 + 15);
+                ctx.fillText('Press SPACE to Try Again', canvas.width / 2, canvas.height / 2 + 50);
+            }
+        }
+
+        // Controls
+        document.addEventListener('keydown', (e) => {
+            if (isPaused) return;
+
+            if (isGameOver && e.key === ' ') {
+                initGame();
+                return;
+            }
+
+            if ((e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') && dy === 0) {
+                dx = 0; dy = -gridSize;
+            } else if ((e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') && dy === 0) {
+                dx = 0; dy = gridSize;
+            } else if ((e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') && dx === 0) {
+                dx = -gridSize; dy = 0;
+            } else if ((e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') && dx === 0) {
+                dx = gridSize; dy = 0;
+            }
+        });
+
+        // Modal / Settings Control
+        function openSettings() {
+            if (teacherPin) {
+                const inputPin = prompt("Enter Teacher PIN / Password:");
+                if (inputPin !== teacherPin) {
+                    alert("Incorrect Password!");
+                    return;
+                }
+            }
+
+            isPaused = true;
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+            isPaused = false;
+        }
+
+        function applySettings() {
+            const parseWords = (id) => document.getElementById(id).value
+                .split(',')
+                .map(w => w.trim().toLowerCase())
+                .filter(w => w.length > 0);
+
+            const nouns = parseWords('nounsInput');
+            const verbs = parseWords('verbsInput');
+            const adjectives = parseWords('adjInput');
+
+            if (nouns.length === 0 || verbs.length === 0 || adjectives.length === 0) {
+                alert('Please ensure every word list has at least one word!');
+                return;
+            }
+
+            wordBank.NOUN = nouns;
+            wordBank.VERB = verbs;
+            wordBank.ADJECTIVE = adjectives;
+
+            teacherPin = document.getElementById('teacherPin').value;
+            maxFoodCount = parseInt(document.getElementById('foodCountInput').value, 10);
+            gameSpeed = parseInt(document.getElementById('speedSelect').value, 10);
+
+            closeSettings();
+            initGame();
+        }
+
+        // Start game
+        initGame();
+    </script>
+</body>
+</html>

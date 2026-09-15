@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Don't Hit Michael</title>
+    <style>
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0f172a;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px;
+            position: relative;
+        }
+
+        /* Title Screen Overlay */
+        #title-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #title-screen.hidden {
+            display: none;
+        }
+
+        .title-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .title-text-group h1 {
+            font-size: clamp(32px, 6vw, 64px);
+            font-weight: 900;
+            color: #f59e0b;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.6), 0 0 20px rgba(245, 158, 11, 0.4);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            line-height: 1.1;
+        }
+
+        .title-text-group p {
+            font-size: clamp(14px, 2vw, 20px);
+            color: #cbd5e1;
+            max-width: 400px;
+            line-height: 1.4;
+        }
+
+        #danceCanvas {
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        #play-btn {
+            padding: 16px 48px;
+            font-size: clamp(20px, 3vw, 28px);
+            font-weight: 800;
+            color: #ffffff;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4);
+            transition: all 0.2s ease;
+            letter-spacing: 1px;
+        }
+
+        #play-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 12px 30px rgba(34, 197, 94, 0.6);
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+        }
+
+        #play-btn:active {
+            transform: scale(0.96);
+        }
+
+        #top-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 950px;
+            z-index: 10;
+            flex-shrink: 0;
+            position: relative;
+        }
+        .header-title-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            position: relative;
+        }
+        h1 { 
+            margin: 2px 0 4px 0; 
+            font-size: clamp(16px, 3vw, 26px); 
+            letter-spacing: 1px;
+            color: #f8fafc;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5); 
+            text-align: center;
+        }
+        #settings-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 18px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        #settings-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-50%) scale(1.08);
+        }
+        #ui-container {
+            text-align: center;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 6px 14px;
+            border-radius: 12px;
+            width: 100%;
+            box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+        #sentence-display {
+            font-size: clamp(16px, 2.2vw, 24px);
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: #fbbf24;
+            min-height: 28px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+        #status-msg {
+            font-size: clamp(11px, 1.4vw, 14px);
+            color: #4ade80;
+            margin-top: 2px;
+            font-weight: 600;
+            min-height: 16px;
+        }
+        #lives-display {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: clamp(14px, 1.8vw, 20px);
+            letter-spacing: 2px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+        }
+        #game-wrapper {
+            flex: 1;
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 0; 
+            padding: 4px 0;
+        }
+        #gameCanvas {
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 12px 24px -8px rgba(0,0,0,0.7);
+            cursor: crosshair;
+            width: min(100%, calc((100vh - 110px) * 1.826));
+            height: min(100%, calc(100vw / 1.826));
+            object-fit: contain;
+            touch-action: none;
+        }
+        .instructions {
+            font-size: clamp(10px, 1.2vw, 13px);
+            color: #94a3b8;
+            font-weight: 500;
+            text-align: center;
+            z-index: 10;
+            flex-shrink: 0;
+            margin-bottom: 2px;
+        }
+
+        /* Settings Modal Styling */
+        #settings-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(6px);
+            z-index: 300;
+            align-items: center;
+            justify-content: center;
+        }
+        #settings-modal.active {
+            display: flex;
+        }
+        .modal-card {
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 20px 24px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+        .modal-header h2 {
+            font-size: 20px;
+            color: #f8fafc;
+        }
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 24px;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .close-btn:hover {
+            color: white;
+        }
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+        .setting-row label {
+            font-size: 14px;
+            color: #cbd5e1;
+            font-weight: 600;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 24px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #475569;
+            transition: .3s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #3b82f6;
+        }
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+        .setting-row input[type="range"] {
+            accent-color: #3b82f6;
+            cursor: pointer;
+            width: 120px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Title Screen Overlay -->
+    <div id="title-screen">
+        <div class="title-container">
+            <div class="title-text-group">
+                <h1>Don't Hit Michael!</h1>
+                <p>Shoot the word apples in order to spell sentences, but avoid hitting Michael!</p>
+            </div>
+            <canvas id="danceCanvas" width="200" height="200"></canvas>
+        </div>
+        <button id="play-btn">LET'S PLAY 🏹</button>
+    </div>
+
+    <div id="top-header">
+        <div class="header-title-bar">
+            <h1>🏹 Don't Hit Michael! 🍎</h1>
+            <button id="settings-btn" title="Game Settings">⚙️</button>
+        </div>
+        
+        <div id="ui-container">
+            <div id="lives-display">❤️❤️❤️</div>
+            <div id="sentence-display">Loading...</div>
+            <div id="status-msg">Click and drag back to aim and draw your bow!</div>
+        </div>
+    </div>
+
+    <div id="game-wrapper">
+        <canvas id="gameCanvas" width="950" height="520"></canvas>
+    </div>
+
+    <div class="instructions">
+        Target the words in order to complete the sentence. Watch your aim!
+    </div>
+
+    <!-- Settings Modal Window -->
+    <div id="settings-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>⚙️ Game Settings</h2>
+                <button class="close-btn" id="close-modal">&times;</button>
+            </div>
+            
+            <div class="setting-row">
+                <label for="crouch-toggle">Michael Crouching</label>
+                <label class="switch">
+                    <input type="checkbox" id="crouch-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-row">
+                <label for="aim-toggle">Aim Trajectory Line</label>
+                <label class="switch">
+                    <input type="checkbox" id="aim-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-row">
+                <label for="power-range">Shot Power (<span id="power-val">1.0</span>x)</label>
+                <input type="range" id="power-range" min="0.5" max="2.0" step="0.1" value="1.0">
+            </div>
+
+            <div class="setting-row">
+                <label for="float-range">Target Movement</label>
+                <input type="range" id="float-range" min="0" max="2" step="0.5" value="1.0">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const sentenceDisplay = document.getElementById('sentence-display');
+        const statusMsg = document.getElementById('status-msg');
+        const livesDisplay = document.getElementById('lives-display');
+
+        // Title Screen Elements
+        const titleScreen = document.getElementById('title-screen');
+        const playBtn = document.getElementById('play-btn');
+        const danceCanvas = document.getElementById('danceCanvas');
+        const danceCtx = danceCanvas.getContext('2d');
+
+        // Settings Elements
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsModal = document.getElementById('settings-modal');
+        const closeModal = document.getElementById('close-modal');
+        const crouchToggle = document.getElementById('crouch-toggle');
+        const aimToggle = document.getElementById('aim-toggle');
+        const powerRange = document.getElementById('power-range');
+        const powerVal = document.getElementById('power-val');
+        const floatRange = document.getElementById('float-range');
+
+        let gameStarted = false;
+
+        // Title Screen Dancing Michael Animation
+        let danceFrame = 0;
+        function animateMichaelDance() {
+            if (gameStarted) return;
+
+            danceCtx.clearRect(0, 0, danceCanvas.width, danceCanvas.height);
+            danceFrame += 0.08;
+
+            const centerX = danceCanvas.width / 2;
+            const centerY = danceCanvas.height / 2 + 15;
+
+            danceCtx.save();
+            danceCtx.translate(centerX, centerY);
+
+            // Dancing body bounce & sway
+            const bounce = Math.abs(Math.sin(danceFrame * 2)) * 12;
+            const sway = Math.sin(danceFrame) * 0.15;
+
+            danceCtx.translate(0, -bounce);
+            danceCtx.rotate(sway);
+
+            // Shadow
+            danceCtx.beginPath();
+            danceCtx.ellipse(0, 45 + bounce, 22, 6, 0, 0, Math.PI * 2);
+            danceCtx.fillStyle = "rgba(0,0,0,0.3)";
+            danceCtx.fill();
+
+            // Legs dancing
+            const legAngle = Math.sin(danceFrame * 2) * 0.3;
+            danceCtx.fillStyle = '#334155';
+            
+            danceCtx.save();
+            danceCtx.rotate(legAngle);
+            danceCtx.fillRect(-12, 10, 8, 30);
+            danceCtx.restore();
+
+            danceCtx.save();
+            danceCtx.rotate(-legAngle);
+            danceCtx.fillRect(4, 10, 8, 30);
+            danceCtx.restore();
+
+            // Torso
+            danceCtx.fillStyle = '#2563eb';
+            danceCtx.fillRect(-14, -25, 28, 35);
+
+            // Animated Arms (Wave/Party pose)
+            const armWaveLeft = Math.sin(danceFrame * 3) * 0.4 - 0.5;
+            const armWaveRight = Math.cos(danceFrame * 3) * 0.4 + 0.5;
+
+            danceCtx.fillStyle = '#2563eb';
+            danceCtx.save();
+            danceCtx.translate(-14, -20);
+            danceCtx.rotate(armWaveLeft - Math.PI / 3);
+            danceCtx.fillRect(-30, -5, 30, 10);
+            danceCtx.fillStyle = '#ffdbac';
+            danceCtx.beginPath();
+            danceCtx.arc(-32, 0, 5, 0, Math.PI * 2);
+            danceCtx.fill();
+            danceCtx.restore();
+
+            danceCtx.fillStyle = '#2563eb';
+            danceCtx.save();
+            danceCtx.translate(14, -20);
+            danceCtx.rotate(armWaveRight + Math.PI / 3);
+            danceCtx.fillRect(0, -5, 30, 10);
+            danceCtx.fillStyle = '#ffdbac';
+            danceCtx.beginPath();
+            danceCtx.arc(32, 0, 5, 0, Math.PI * 2);
+            danceCtx.fill();
+            danceCtx.restore();
+
+            // Head
+            danceCtx.beginPath();
+            danceCtx.arc(0, -38, 15, 0, Math.PI * 2);
+            danceCtx.fillStyle = '#ffdbac';
+            danceCtx.fill();
+            danceCtx.strokeStyle = '#1d4ed8';
+            danceCtx.lineWidth = 1.5;
+            danceCtx.stroke();
+
+            // Happy Face
+            danceCtx.fillStyle = '#0f172a';
+            danceCtx.beginPath();
+            danceCtx.arc(-5, -40, 2, 0, Math.PI * 2);
+            danceCtx.arc(5, -40, 2, 0, Math.PI * 2);
+            danceCtx.fill();
+
+            danceCtx.beginPath();
+            danceCtx.arc(0, -33, 5, 0, Math.PI, false);
+            danceCtx.strokeStyle = '#0f172a';
+            danceCtx.lineWidth = 2;
+            danceCtx.stroke();
+
+            // Hair
+            danceCtx.beginPath();
+            danceCtx.arc(0, -40, 16, Math.PI, Math.PI * 2);
+            danceCtx.fillStyle = '#f59e0b';
+            danceCtx.fill();
+
+            danceCtx.restore();
+
+            // Floating notes / sparkle effect
+            danceCtx.fillStyle = '#fbbf24';
+            danceCtx.font = '16px sans-serif';
+            danceCtx.fillText('🎵', centerX - 60 + Math.sin(danceFrame) * 10, centerY - 60 - bounce);
+            danceCtx.fillText('✨', centerX + 45 + Math.cos(danceFrame) * 10, centerY - 50 - bounce);
+
+            requestAnimationFrame(animateMichaelDance);
+        }
+
+        playBtn.addEventListener('click', () => {
+            gameStarted = true;
+            titleScreen.classList.add('hidden');
+        });
+
+        // Configurable Gameplay Settings State
+        const settings = {
+            allowCrouch: true,
+            showAimLine: true,
+            shotPowerMult: 1.0,
+            floatSpeedMult: 1.0
+        };
+
+        // Modal Event Listeners
+        settingsBtn.addEventListener('click', () => settingsModal.classList.add('active'));
+        closeModal.addEventListener('click', () => settingsModal.classList.remove('active'));
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) settingsModal.classList.remove('active');
+        });
+
+        crouchToggle.addEventListener('change', (e) => {
+            settings.allowCrouch = e.target.checked;
+            if (!settings.allowCrouch) {
+                isMichaelCrouchingLevel = false;
+                currentCrouchOffset = 0;
+                npc.y = npc.baseY;
+            }
+        });
+
+        aimToggle.addEventListener('change', (e) => {
+            settings.showAimLine = e.target.checked;
+        });
+
+        powerRange.addEventListener('input', (e) => {
+            settings.shotPowerMult = parseFloat(e.target.value);
+            powerVal.textContent = settings.shotPowerMult.toFixed(1);
+        });
+
+        floatRange.addEventListener('input', (e) => {
+            settings.floatSpeedMult = parseFloat(e.target.value);
+        });
+
+        // Expanded ESL Sentences List (25 Questions)
+        const sentences = [
+            { template: "The ___ cat ___ on the ___.", words: ["fast", "jumped", "mat"] },
+            { template: "She ___ a ___ red ___.", words: ["likes", "big", "apple"] },
+            { template: "We ___ to the ___ every ___.", words: ["go", "park", "day"] },
+            { template: "They ___ playing ___ with ___.", words: ["enjoy", "games", "friends"] },
+            { template: "He ___ a ___ picture ___.", words: ["drew", "nice", "today"] },
+            { template: "The ___ bird ___ in the ___.", words: ["little", "sings", "tree"] },
+            { template: "A ___ dog ___ in the ___.", words: ["happy", "barks", "yard"] },
+            { template: "Wild ___ swim in the ___ ___.", words: ["fish", "deep", "river"] },
+            { template: "The ___ monkey ___ a ___.", words: ["funny", "ate", "banana"] },
+            { template: "Small ___ crawl on the ___ ___.", words: ["bugs", "green", "grass"] },
+            { template: "I ___ warm ___ for ___.", words: ["eat", "soup", "dinner"] },
+            { template: "My ___ bakes ___ chocolate ___.", words: ["mom", "sweet", "cookies"] },
+            { template: "They ___ fresh ___ every ___.", words: ["drink", "water", "morning"] },
+            { template: "He ___ a ___ slice of ___.", words: ["wants", "hot", "pizza"] },
+            { template: "We ___ sour ___ at ___.", words: ["bought", "lemons", "lunch"] },
+            { template: "Students ___ good ___ in ___.", words: ["read", "books", "class"] },
+            { template: "The ___ teacher ___ a ___ lesson.", words: ["kind", "wrote", "short"] },
+            { template: "I ___ my ___ after ___.", words: ["clean", "room", "school"] },
+            { template: "She ___ to ___ early at ___.", words: ["goes", "sleep", "night"] },
+            { template: "We ___ our ___ before ___.", words: ["wash", "hands", "eating"] },
+            { template: "The ___ sun ___ in the ___.", words: ["bright", "shines", "sky"] },
+            { template: "Heavy ___ fell on the ___ ___.", words: ["rain", "old", "roof"] },
+            { template: "Children ___ fast in the ___ ___.", words: ["run", "cool", "breeze"] },
+            { template: "He ___ his ___ bike to ___.", words: ["rides", "blue", "town"] },
+            { template: "We ___ loud ___ on the ___.", words: ["play", "music", "radio"] }
+        ];
+
+        let currentLevel = 0;
+        let targetOrderIndex = 0;
+        let sentenceWords = [];
+        let targets = [];
+        let levelResetting = false;
+        
+        // Lives State
+        const MAX_LIVES = 3;
+        let lives = MAX_LIVES;
+
+        const BASE_WIDTH = 950;
+        const BASE_HEIGHT = 520;
+
+        const archer = { x: 120, y: 320, scale: 1.5 };
+        const npc = { x: 760, y: 320, baseY: 320, y: 320, scale: 1.5 };
+        
+        let isMichaelCrouchingLevel = false;
+        let crouchPhase = 0;
+        let crouchSpeed = 0.03;
+        let crouchAmplitude = 35;
+        let currentCrouchOffset = 0;
+
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let dragCurrent = { x: 0, y: 0 };
+        let drawAmount = 0;
+        let aimAngle = 0;
+        let recoilTimer = 0;
+        
+        let stuckArrow = null;
+        let npcHitState = false;
+
+        let typewriterCharCount = 0;
+        let typewriterTimer = 0;
+        let lastSpeechText = "";
+
+        let arrow = null;
+        const gravity = 0.22;
+
+        const clouds = [
+            { x: 100, y: 60, scale: 0.8, speed: 0.2 },
+            { x: 450, y: 90, scale: 1.1, speed: 0.15 },
+            { x: 800, y: 50, scale: 0.6, speed: 0.25 }
+        ];
+
+        class Target {
+            constructor(word, order, x, y, isMichaelHead = false) {
+                this.word = word;
+                this.order = order; 
+                this.baseX = x;
+                this.baseY = y;
+                this.x = x;
+                this.y = y;
+                this.radius = 30;
+                this.hit = false;
+                this.isMichaelHead = isMichaelHead;
+                
+                this.floatPhase = Math.random() * Math.PI * 2;
+                this.floatSpeed = 0.02 + Math.random() * 0.02;
+                this.floatAmplitude = 20 + Math.min(currentLevel * 3, 40); 
+            }
+
+            update() {
+                if (this.isMichaelHead) {
+                    this.y = this.baseY + currentCrouchOffset;
+                } else if (currentLevel > 0 && settings.floatSpeedMult > 0) {
+                    this.floatPhase += this.floatSpeed * (1 + currentLevel * 0.1) * settings.floatSpeedMult;
+                    this.y = this.baseY + Math.sin(this.floatPhase) * (this.floatAmplitude * settings.floatSpeedMult);
+                }
+            }
+
+            draw() {
+                if (this.hit) return;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.ellipse(this.x, this.y + this.radius + 2, this.radius * 0.7, 5, 0, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+                ctx.fill();
+
+                let grad = ctx.createRadialGradient(
+                    this.x - 8, this.y - 8, 4,
+                    this.x, this.y, this.radius
+                );
+                grad.addColorStop(0, '#ff6b6b');
+                grad.addColorStop(0.7, '#ee5253');
+                grad.addColorStop(1, '#c8d6e5');
+
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = grad;
+                ctx.fill();
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = "#990000";
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(this.x - 10, this.y - 10, 7, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.rect(this.x - 2, this.y - this.radius - 7, 4, 9);
+                ctx.fillStyle = '#5d4037';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.ellipse(this.x + 6, this.y - this.radius - 4, 7, 4, Math.PI / 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#10b981';
+                ctx.fill();
+
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 15px 'Segoe UI', Arial, sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
+                ctx.shadowBlur = 4;
+                ctx.fillText(this.word, this.x, this.y);
+                ctx.restore();
+            }
+        }
+
+        function getRandomPosition(existingPositions) {
+            let posX, posY, overlapping;
+            const minDist = 85;
+            
+            do {
+                overlapping = false;
+                posX = Math.floor(Math.random() * (BASE_WIDTH - 550)) + 300; 
+                posY = Math.floor(Math.random() * 160) + 110;
+
+                for (let pos of existingPositions) {
+                    if (Math.hypot(posX - pos.x, posY - pos.y) < minDist) {
+                        overlapping = true;
+                        break;
+                    }
+                }
+            } while (overlapping);
+
+            return { x: posX, y: posY };
+        }
+
+        function updateMichaelCrouch() {
+            if (isMichaelCrouchingLevel && settings.allowCrouch) {
+                crouchPhase += crouchSpeed;
+                currentCrouchOffset = Math.abs(Math.sin(crouchPhase)) * crouchAmplitude;
+                npc.y = npc.baseY + currentCrouchOffset;
+            } else {
+                currentCrouchOffset = 0;
+                npc.y = npc.baseY;
+            }
+        }
+
+        function renderLives() {
+            let heartsHtml = '';
+            for (let i = 0; i < MAX_LIVES; i++) {
+                if (i < lives) {
+                    heartsHtml += '❤️';
+                } else {
+                    heartsHtml += '🖤';
+                }
+            }
+            livesDisplay.innerHTML = heartsHtml;
+        }
+
+        function initLevel() {
+            targetOrderIndex = 0;
+            arrow = null;
+            stuckArrow = null;
+            npcHitState = false;
+            levelResetting = false;
+            typewriterCharCount = 0;
+            typewriterTimer = 0;
+            lastSpeechText = "";
+
+            isMichaelCrouchingLevel = settings.allowCrouch && (currentLevel >= 1 && (currentLevel % 2 === 1 || Math.random() > 0.4));
+            crouchPhase = 0;
+            
+            const levelData = sentences[currentLevel % sentences.length];
+            sentenceWords = [...levelData.words];
+
+            let shuffled = levelData.words.map((w, idx) => ({ word: w, order: idx }));
+            shuffled.sort(() => Math.random() - 0.5);
+
+            const michaelHeadPos = { x: npc.x, y: npc.baseY - 108 };
+            const positions = [michaelHeadPos];
+
+            for (let i = 1; i < 3; i++) {
+                positions.push(getRandomPosition(positions));
+            }
+
+            targets = shuffled.map((item, i) => {
+                const isHead = (positions[i].x === michaelHeadPos.x && positions[i].y === michaelHeadPos.y);
+                return new Target(item.word, item.order, positions[i].x, positions[i].y, isHead);
+            });
+            renderLives();
+            updateUI();
+        }
+
+        function updateUI() {
+            const levelData = sentences[currentLevel % sentences.length];
+            let currentTemplate = levelData.template;
+            
+            for (let i = 0; i < 3; i++) {
+                if (i < targetOrderIndex) {
+                    currentTemplate = currentTemplate.replace("___", `<span style="color: #4ade80;">[ ${levelData.words[i].toUpperCase()} ]</span>`);
+                }
+            }
+
+            sentenceDisplay.innerHTML = `<span style="color: #64748b; font-size: 0.8em;">(Q${(currentLevel % sentences.length) + 1}/${sentences.length})</span> ` + currentTemplate;
+        }
+
+        function drawBackground() {
+            let skyGrad = ctx.createLinearGradient(0, 0, 0, 360);
+            skyGrad.addColorStop(0, '#38bdf8');
+            skyGrad.addColorStop(0.6, '#bae6fd');
+            skyGrad.addColorStop(1, '#e0f2fe');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, BASE_WIDTH, 360);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+            clouds.forEach(c => {
+                c.x += c.speed;
+                if (c.x > BASE_WIDTH + 50) c.x = -60;
+                ctx.save();
+                ctx.translate(c.x, c.y);
+                ctx.scale(c.scale, c.scale);
+                ctx.beginPath();
+                ctx.arc(0, 0, 25, 0, Math.PI * 2);
+                ctx.arc(20, -10, 20, 0, Math.PI * 2);
+                ctx.arc(40, 0, 22, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            ctx.fillStyle = '#64748b';
+            ctx.beginPath();
+            ctx.moveTo(0, 360);
+            ctx.lineTo(150, 220);
+            ctx.lineTo(320, 360);
+            ctx.lineTo(480, 260);
+            ctx.lineTo(650, 360);
+            ctx.fill();
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.beginPath();
+            ctx.moveTo(250, 360);
+            ctx.lineTo(400, 240);
+            ctx.lineTo(580, 360);
+            ctx.lineTo(750, 210);
+            ctx.lineTo(950, 360);
+            ctx.fill();
+
+            ctx.fillStyle = '#1e3a8a';
+            for (let i = 0; i < BASE_WIDTH; i += 35) {
+                ctx.beginPath();
+                ctx.moveTo(i, 360);
+                ctx.lineTo(i + 20, 310);
+                ctx.lineTo(i + 40, 360);
+                ctx.fill();
+            }
+
+            let groundGrad = ctx.createLinearGradient(0, 360, 0, BASE_HEIGHT);
+            groundGrad.addColorStop(0, '#22c55e');
+            groundGrad.addColorStop(0.3, '#16a34a');
+            groundGrad.addColorStop(1, '#15803d');
+            ctx.fillStyle = groundGrad;
+            ctx.fillRect(0, 360, BASE_WIDTH, 160);
+
+            ctx.strokeStyle = '#86efac';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, 360);
+            ctx.lineTo(BASE_WIDTH, 360);
+            ctx.stroke();
+        }
+
+        function drawAnimatedArcher() {
+            ctx.save();
+            ctx.translate(archer.x, archer.y);
+            ctx.scale(archer.scale, archer.scale);
+
+            ctx.beginPath();
+            ctx.ellipse(0, 42, 20, 6, 0, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(0,0,0,0.25)";
+            ctx.fill();
+
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.moveTo(-12, -25);
+            ctx.quadraticCurveTo(-35, 10, -28, 42);
+            ctx.lineTo(-6, 40);
+            ctx.lineTo(-4, -20);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(-12, 10, 8, 30);
+            ctx.fillRect(4, 10, 8, 30);
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(-13, 30, 9, 12);
+            ctx.fillRect(3, 30, 9, 12);
+
+            ctx.save();
+            ctx.rotate(aimAngle * 0.2);
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(-10, -25, 20, 38);
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(-10, 3, 20, 5);
+            ctx.restore();
+
+            ctx.beginPath();
+            ctx.arc(0, -38, 13, 0, Math.PI * 2);
+            ctx.fillStyle = '#0f172a';
+            ctx.fill();
+
+            ctx.fillStyle = '#38bdf8';
+            ctx.shadowColor = '#38bdf8';
+            ctx.shadowBlur = 6;
+            ctx.fillRect(2, -41, 5, 3);
+            ctx.shadowBlur = 0;
+
+            ctx.beginPath();
+            ctx.moveTo(-16, -34);
+            ctx.quadraticCurveTo(-14, -58, 2, -56);
+            ctx.quadraticCurveTo(16, -54, 14, -34);
+            ctx.quadraticCurveTo(6, -46, 0, -45);
+            ctx.quadraticCurveTo(-8, -46, -16, -34);
+            ctx.fillStyle = '#1e293b';
+            ctx.fill();
+
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(-16, -20, 7, 26);
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(-16, -20, 7, 3);
+
+            ctx.save();
+            ctx.translate(0, -20);
+            ctx.rotate(aimAngle);
+
+            const bowRadius = 34;
+            const pullBack = drawAmount * 22;
+            const recoilX = recoilTimer > 0 ? -Math.sin(recoilTimer) * 4 : 0;
+
+            ctx.strokeStyle = '#18181b';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.arc(15 + recoilX, 0, bowRadius, -Math.PI / 2.1, Math.PI / 2.1);
+            ctx.stroke();
+
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(15 + recoilX + Math.cos(-Math.PI / 2.1) * bowRadius, Math.sin(-Math.PI / 2.1) * bowRadius, 3.5, 0, Math.PI * 2);
+            ctx.arc(15 + recoilX + Math.cos(Math.PI / 2.1) * bowRadius, Math.sin(Math.PI / 2.1) * bowRadius, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.moveTo(15 + recoilX + Math.cos(-Math.PI / 2.1) * bowRadius, Math.sin(-Math.PI / 2.1) * bowRadius);
+            ctx.lineTo(15 + recoilX - pullBack, 0);
+            ctx.lineTo(15 + recoilX + Math.cos(Math.PI / 2.1) * bowRadius, Math.sin(Math.PI / 2.1) * bowRadius);
+            ctx.stroke();
+
+            if (isDragging) {
+                ctx.save();
+                ctx.strokeStyle = "#4b5563";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(15 - pullBack, 0);
+                ctx.lineTo(42 - pullBack, 0);
+                ctx.stroke();
+
+                ctx.fillStyle = "#e5e7eb";
+                ctx.beginPath();
+                ctx.moveTo(42 - pullBack, 0);
+                ctx.lineTo(34 - pullBack, -4);
+                ctx.lineTo(34 - pullBack, 4);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+
+            ctx.fillStyle = '#475569';
+            ctx.beginPath();
+            ctx.arc(-2, -2, 7, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(15 + recoilX, 0);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(-5, 2);
+            if (isDragging) {
+                ctx.lineTo(15 - pullBack, 0);
+            } else {
+                ctx.lineTo(10, 8);
+            }
+            ctx.stroke();
+
+            ctx.restore(); 
+            ctx.restore(); 
+        }
+
+        function drawSpeechBubble(fullText, textColor, baseWidth = 120) {
+            if (lastSpeechText !== fullText) {
+                typewriterCharCount = 0;
+                typewriterTimer = 0;
+                lastSpeechText = fullText;
+            }
+
+            typewriterTimer++;
+            if (typewriterTimer % 6 === 0) {
+                typewriterCharCount++;
+                if (typewriterCharCount > fullText.length + 8) {
+                    typewriterCharCount = 0;
+                }
+            }
+
+            const visibleText = fullText.substring(0, Math.min(typewriterCharCount, fullText.length));
+
+            ctx.save();
+            ctx.font = 'bold 12px "Segoe UI", Arial, sans-serif';
+            const textWidth = ctx.measureText(fullText).width;
+            const bubbleWidth = Math.max(baseWidth, textWidth + 24);
+            const bubbleHeight = 28;
+
+            const headTargetX = npc.x - (18 * npc.scale);
+            const headTargetY = npc.y - (38 * npc.scale);
+
+            const horizontalGap = 20;
+            let worldX = npc.x - (30 * npc.scale) - bubbleWidth - horizontalGap;
+            let worldY = npc.y - (45 * npc.scale);
+
+            const margin = 10;
+            worldX = Math.min(Math.max(worldX, margin), BASE_WIDTH - bubbleWidth - margin);
+            worldY = Math.min(Math.max(worldY, margin), BASE_HEIGHT - bubbleHeight - margin);
+
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.roundRect(worldX, worldY, bubbleWidth, bubbleHeight, 6);
+            ctx.fill();
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            let tailAttachX = worldX + bubbleWidth;
+            let tailAttachY = worldY + (bubbleHeight / 2);
+
+            ctx.beginPath();
+            ctx.moveTo(tailAttachX, tailAttachY - 5);
+            ctx.lineTo(headTargetX, headTargetY);
+            ctx.lineTo(tailAttachX, tailAttachY + 5);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(tailAttachX, tailAttachY - 4);
+            ctx.lineTo(tailAttachX, tailAttachY + 4);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = textColor;
+            ctx.font = 'bold 12px "Segoe UI", Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(visibleText, worldX + bubbleWidth / 2, worldY + bubbleHeight / 2 + 1);
+
+            ctx.restore();
+        }
+
+        function drawTposedNPC() {
+            ctx.save();
+            ctx.translate(npc.x, npc.y);
+            ctx.scale(npc.scale, npc.scale);
+
+            const crouchFactor = currentCrouchOffset / crouchAmplitude;
+            ctx.beginPath();
+            ctx.ellipse(0, 42 - currentCrouchOffset * 0.4, 20 + crouchFactor * 6, 6, 0, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(0,0,0,0.25)";
+            ctx.fill();
+
+            let lean = 0;
+            if (npcHitState) {
+                lean = 0.15;
+            } else if (arrow && arrow.x > npc.x - 180) {
+                lean = -0.12;
+            }
+            ctx.rotate(lean);
+
+            ctx.fillStyle = '#334155';
+            if (isMichaelCrouchingLevel && settings.allowCrouch) {
+                ctx.fillRect(-14, 10, 8, 20);
+                ctx.fillRect(4, 10, 8, 20);
+                ctx.fillRect(-10, 24, 8, 16);
+                ctx.fillRect(-2, 24, 8, 16);
+            } else {
+                ctx.fillRect(-10, 10, 8, 30);
+                ctx.fillRect(2, 10, 8, 30);
+            }
+
+            ctx.fillStyle = '#2563eb';
+            ctx.fillRect(-12, -25, 24, 35);
+
+            ctx.fillStyle = '#2563eb';
+            ctx.fillRect(-55, -23, 45, 12);
+            ctx.fillRect(10, -23, 45, 12);
+
+            ctx.fillStyle = '#ffdbac';
+            ctx.beginPath();
+            ctx.arc(-56, -17, 6, 0, Math.PI * 2);
+            ctx.arc(56, -17, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(0, -38, 14, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffdbac';
+            ctx.fill();
+            ctx.strokeStyle = '#1d4ed8';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            if (npcHitState) {
+                ctx.strokeStyle = '#dc2626';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-7, -42); ctx.lineTo(-3, -38);
+                ctx.moveTo(-3, -42); ctx.lineTo(-7, -38);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(3, -42); ctx.lineTo(7, -38);
+                ctx.moveTo(7, -42); ctx.lineTo(3, -38);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(0, -32, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#dc2626';
+                ctx.fill();
+            } else {
+                if (lean < 0 || (isMichaelCrouchingLevel && settings.allowCrouch)) {
+                    ctx.fillStyle = '#0f172a';
+                    ctx.beginPath();
+                    ctx.arc(-5, -40, 2, 0, Math.PI * 2);
+                    ctx.arc(5, -40, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(0, -31, 4, Math.PI, 0);
+                    ctx.stroke();
+                } else {
+                    ctx.fillStyle = '#0f172a';
+                    ctx.beginPath();
+                    ctx.arc(-5, -40, 2, 0, Math.PI * 2);
+                    ctx.arc(5, -40, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(0, -34, 4, 0, Math.PI, false);
+                    ctx.stroke();
+                }
+            }
+
+            ctx.beginPath();
+            ctx.arc(0, -40, 15, Math.PI, Math.PI * 2);
+            ctx.fillStyle = '#f59e0b';
+            ctx.fill();
+
+            if (stuckArrow) {
+                ctx.save();
+                ctx.translate(stuckArrow.localX, stuckArrow.localY);
+                ctx.rotate(stuckArrow.angle - lean);
+
+                ctx.strokeStyle = "#5d4037";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(-25, 0);
+                ctx.lineTo(8, 0);
+                ctx.stroke();
+
+                ctx.fillStyle = "#ef4444";
+                ctx.beginPath();
+                ctx.moveTo(-25, 0);
+                ctx.lineTo(-20, -4);
+                ctx.lineTo(-15, 0);
+                ctx.lineTo(-20, 4);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        function drawHighVisAiming() {
+            if (!isDragging || !settings.showAimLine) return;
+
+            const dx = dragStart.x - dragCurrent.x;
+            const dy = dragStart.y - dragCurrent.y;
+
+            let simVx = Math.min(Math.max(dx * 0.15 * settings.shotPowerMult, 2), 22 * settings.shotPowerMult);
+            let simVy = Math.min(Math.max(dy * 0.15 * settings.shotPowerMult, -20 * settings.shotPowerMult), 20 * settings.shotPowerMult);
+
+            let simX = archer.x + Math.cos(aimAngle) * (45);
+            let simY = archer.y - 30 + Math.sin(aimAngle) * (45);
+
+            ctx.save();
+            for (let i = 0; i < 26; i++) {
+                simX += simVx;
+                simY += simVy;
+                simVy += gravity;
+
+                ctx.beginPath();
+                ctx.arc(simX, simY, 4.5, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(253, 224, 71, ${1 - i / 26})`;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function getCanvasCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const scaleX = BASE_WIDTH / rect.width;
+            const scaleY = BASE_HEIGHT / rect.height;
+
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function handleStart(e) {
+            if (!gameStarted || arrow || levelResetting || settingsModal.classList.contains('active')) return;
+            isDragging = true;
+            const pos = getCanvasCoordinates(e);
+            dragStart = pos;
+            dragCurrent = pos;
+        }
+
+        function handleMove(e) {
+            if (!isDragging) return;
+            const pos = getCanvasCoordinates(e);
+            dragCurrent = pos;
+
+            const dx = dragStart.x - dragCurrent.x;
+            const dy = dragStart.y - dragCurrent.y;
+            
+            aimAngle = Math.atan2(dy, dx);
+            const dist = Math.hypot(dx, dy);
+            drawAmount = Math.min(dist / 120, 1.0);
+        }
+
+        function handleEnd() {
+            if (!isDragging) return;
+            isDragging = false;
+
+            const dx = dragStart.x - dragCurrent.x;
+            const dy = dragStart.y - dragCurrent.y;
+
+            const spawnX = archer.x + Math.cos(aimAngle) * 30;
+            const spawnY = archer.y - 30 + Math.sin(aimAngle) * 30;
+
+            arrow = {
+                x: spawnX,
+                y: spawnY,
+                vx: Math.min(Math.max(dx * 0.15 * settings.shotPowerMult, 2), 22 * settings.shotPowerMult),
+                vy: Math.min(Math.max(dy * 0.15 * settings.shotPowerMult, -20 * settings.shotPowerMult), 20 * settings.shotPowerMult),
+                angle: aimAngle
+            };
+
+            recoilTimer = 10;
+            drawAmount = 0;
+        }
+
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleEnd);
+
+        canvas.addEventListener('touchstart', (e) => { handleStart(e); e.preventDefault(); }, { passive: false });
+        canvas.addEventListener('touchmove', (e) => { handleMove(e); e.preventDefault(); }, { passive: false });
+        window.addEventListener('touchend', handleEnd);
+
+        function triggerReset(message, deductLife = true) {
+            levelResetting = true;
+
+            if (deductLife) {
+                lives--;
+                renderLives();
+            }
+
+            if (lives <= 0) {
+                statusMsg.style.color = "#ef4444";
+                statusMsg.textContent = "💔 Game Over! Resetting Level...";
+                setTimeout(() => {
+                    lives = MAX_LIVES;
+                    statusMsg.style.color = "#4ade80";
+                    statusMsg.textContent = (isMichaelCrouchingLevel && settings.allowCrouch)
+                        ? "Challenge Active: Michael is crouching up & down! Time your shots!"
+                        : "Click and drag back to aim and draw your bow!";
+                    initLevel();
+                }, 2200);
+            } else {
+                statusMsg.style.color = "#f87171";
+                statusMsg.textContent = message;
+                setTimeout(() => {
+                    statusMsg.style.color = "#4ade80";
+                    statusMsg.textContent = (isMichaelCrouchingLevel && settings.allowCrouch)
+                        ? "Challenge Active: Michael is crouching up & down! Time your shots!"
+                        : "Click and drag back to aim and draw your bow!";
+                    initLevel();
+                }, 1800);
+            }
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
+
+            drawBackground();
+
+            if (recoilTimer > 0) recoilTimer--;
+
+            updateMichaelCrouch();
+            drawTposedNPC();
+            drawAnimatedArcher();
+            drawHighVisAiming();
+
+            // 1. Draw Apple Targets
+            targets.forEach(target => {
+                target.update();
+                target.draw();
+            });
+
+            // 2. Draw Side Speech Bubble
+            if (npcHitState) {
+                drawSpeechBubble('Ouch!', '#dc2626', 60);
+            } else {
+                drawSpeechBubble((isMichaelCrouchingLevel && settings.allowCrouch) ? "Whoa! Dodging!" : "Hi, I'm Michael", '#1e293b', 115);
+            }
+
+            if (arrow) {
+                arrow.x += arrow.vx;
+                arrow.y += arrow.vy;
+                arrow.vy += gravity;
+                arrow.angle = Math.atan2(arrow.vy, arrow.vx);
+
+                ctx.save();
+                ctx.translate(arrow.x, arrow.y);
+                ctx.rotate(arrow.angle);
+                ctx.strokeStyle = "#5d4037";
+                ctx.lineWidth = 3.5;
+                ctx.beginPath();
+                ctx.moveTo(-22, 0);
+                ctx.lineTo(14, 0);
+                ctx.stroke();
+
+                ctx.fillStyle = "#cbd5e1";
+                ctx.beginPath();
+                ctx.moveTo(20, 0);
+                ctx.lineTo(11, -6);
+                ctx.lineTo(11, 6);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+
+                // Arrow misses completely and goes off screen
+                if (arrow.x > BASE_WIDTH || arrow.y > BASE_HEIGHT - 20 || arrow.x < 0) {
+                    arrow = null;
+                }
+
+                // Arrow hits Michael -> DEDUCT 1 LIFE
+                if (arrow && 
+                    arrow.x > npc.x - 30 && arrow.x < npc.x + 30 &&
+                    arrow.y > npc.y - 75 && arrow.y < npc.y + 60) {
+                    
+                    stuckArrow = {
+                        localX: (arrow.x - npc.x) / npc.scale,
+                        localY: (arrow.y - npc.y) / npc.scale,
+                        angle: arrow.angle
+                    };
+                    
+                    npcHitState = true;
+                    arrow = null;
+                    triggerReset("Ouch! You hit Michael! (-1 Life)", true);
+                }
+
+                // Arrow hits a target
+                if (arrow) {
+                    for (let i = 0; i < targets.length; i++) {
+                        let t = targets[i];
+                        if (!t.hit) {
+                            let dist = Math.hypot(arrow.x - t.x, arrow.y - t.y);
+                            if (dist < t.radius) {
+                                arrow = null;
+                                if (t.order === targetOrderIndex) {
+                                    // Hit correct word target in sequence -> SUCCESS
+                                    t.hit = true;
+                                    targetOrderIndex++;
+                                    statusMsg.style.color = "#4ade80";
+                                    statusMsg.textContent = "Good job! Correct word hit!";
+                                    updateUI();
+
+                                    if (targetOrderIndex === 3) {
+                                        statusMsg.textContent = "Awesome! Stage Cleared! ❤️ Lives Restored!";
+                                        levelResetting = true;
+                                        // Restore lives on stage clear
+                                        lives = MAX_LIVES;
+                                        renderLives();
+
+                                        setTimeout(() => {
+                                            currentLevel++;
+                                            initLevel();
+                                            statusMsg.textContent = (isMichaelCrouchingLevel && settings.allowCrouch)
+                                                ? "Challenge Unlocked: Michael is crouching up & down!"
+                                                : "Stage Cleared! Get ready for the next sentence.";
+                                        }, 1800);
+                                    }
+                                } else {
+                                    // Hit wrong word target -> DEDUCT 1 LIFE
+                                    triggerReset("Wrong word target! (-1 Life)", true);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start Animations
+        animateMichaelDance();
+        initLevel();
+        gameLoop();
+    </script>
+</body>
+</html>

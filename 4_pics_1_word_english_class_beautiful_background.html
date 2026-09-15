@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4 Pics 1 Word - English Class</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background:
+      radial-gradient(circle at 10% 15%, rgba(255, 214, 102, .42) 0 90px, transparent 91px),
+      radial-gradient(circle at 88% 12%, rgba(116, 190, 255, .35) 0 120px, transparent 121px),
+      radial-gradient(circle at 92% 82%, rgba(167, 139, 250, .30) 0 150px, transparent 151px),
+      radial-gradient(circle at 8% 88%, rgba(110, 231, 183, .30) 0 130px, transparent 131px),
+      linear-gradient(135deg, #eef6ff 0%, #f9f5ff 48%, #f2fbf7 100%);
+    color: #222;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before,
+  body::after {
+    content: "";
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: -1;
+    filter: blur(2px);
+  }
+
+  body::before {
+    width: 260px;
+    height: 260px;
+    left: -100px;
+    top: 42%;
+    background: rgba(255, 255, 255, .55);
+  }
+
+  body::after {
+    width: 320px;
+    height: 320px;
+    right: -130px;
+    top: 42%;
+    background: rgba(255, 255, 255, .5);
+  }
+  .game {
+    width: min(900px, 94vw);
+    padding: 24px 0 35px;
+    text-align: center;
+    position: relative;
+  }
+  h1 { margin: 0 0 8px; font-size: 38px; }
+  .subtitle { margin: 0 0 18px; color: #666; font-size: 18px; }
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    border-radius: 14px;
+    padding: 12px 18px;
+    margin-bottom: 18px;
+    box-shadow: 0 3px 12px #00000012;
+    font-weight: bold;
+  }
+  .pics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 0 auto 20px;
+  }
+  .pic {
+    height: 230px;
+    border-radius: 18px;
+    background: white;
+    border: 3px solid #ddd;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 3px 12px #00000012;
+    overflow: hidden;
+  }
+  .emoji { font-size: 105px; line-height: 1; }
+  .label { display: none; }
+  .question {
+    background: white;
+    padding: 20px;
+    border-radius: 18px;
+    box-shadow: 0 3px 12px #00000012;
+  }
+
+  .letter-lines {
+    display: flex;
+    justify-content: center;
+    gap: 9px;
+    margin: 0 auto 8px;
+    min-height: 42px;
+  }
+  .letter-line {
+    width: 34px;
+    height: 36px;
+    border-bottom: 3px solid #222;
+    display: inline-block;
+  }
+  @media (max-width: 650px) {
+    .letter-lines { gap: 6px; }
+    .letter-line { width: 27px; }
+  }
+
+  input {
+    width: min(520px, 90%);
+    padding: 15px 18px;
+    font-size: 24px;
+    text-align: center;
+    border: 3px solid #aaa;
+    border-radius: 12px;
+    outline: none;
+    text-transform: uppercase;
+  }
+  input:focus { border-color: #555; }
+  button {
+    margin: 12px 5px 0;
+    padding: 13px 24px;
+    border: 0;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  #check { background: #222; color: white; }
+  #next { background: #ddd; }
+  #hint { background: #eee; }
+  button:hover { transform: translateY(-1px); }
+  #hint:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+  }
+  #message {
+    min-height: 30px;
+    margin-top: 14px;
+    font-size: 20px;
+    font-weight: bold;
+  }
+  .correct { color: #16833b; }
+  .wrong { color: #b42318; }
+  .hint { color: #555; font-weight: normal; }
+  .instructions {
+    margin-top: 16px;
+    color: #777;
+    font-size: 14px;
+  }
+  @media (max-width: 650px) {
+    h1 { font-size: 30px; }
+    .pic { height: 170px; }
+    .emoji { font-size: 75px; }
+  }
+
+
+  #teacherButton {
+    margin: 0;
+    padding: 8px 13px;
+    font-size: 14px;
+    background: #eee;
+    color: #222;
+  }
+  #teacherModal {
+    position: fixed;
+    inset: 0;
+    background: #0008;
+    z-index: 1000;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  .teacher-modal {
+    width: min(1000px, 96vw);
+    margin: 0 auto;
+    background: #f4f7fb;
+    border-radius: 18px;
+    padding: 22px;
+    text-align: left;
+  }
+  .teacher-modal h2 { margin-top: 0; }
+  .teacher-note { color:#666; }
+  .teacher-card {
+    background: white;
+    border-radius: 14px;
+    padding: 16px;
+    margin: 14px 0;
+    box-shadow: 0 2px 8px #00000012;
+  }
+  .teacher-title {
+    font-weight: bold;
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+  .teacher-answer {
+    margin-left: 6px;
+    width: min(350px, 70vw);
+    padding: 9px;
+    font-size: 17px;
+    text-transform: none;
+  }
+  .upload-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 15px;
+  }
+  .upload-item { text-align: center; }
+  .preview {
+    height: 150px;
+    background: #f4f4f4;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .preview .emoji { font-size: 65px; }
+  .file-label {
+    display: block;
+    margin-top: 8px;
+    padding: 8px;
+    background: #222;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .file-label input { display: none; }
+  .small-btn {
+    padding: 7px 9px;
+    margin-top: 6px;
+    font-size: 12px;
+    background: #eee;
+  }
+  .delete-question {
+    background: #f0dede;
+    color: #8a1c1c;
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+  .teacher-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .teacher-actions button { margin: 0; }
+  #saveTeacher { background:#222; color:white; }
+  #addQuestion { background:#ddd; }
+  #resetTeacher { background:#eee; }
+  @media (max-width: 700px) {
+    .upload-grid { grid-template-columns: 1fr 1fr; }
+    .preview { height: 130px; }
+  }
+
+</style>
+</head>
+<body>
+<div class="game">
+  <h1>4 Pics 1 Word</h1>
+  <p class="subtitle">Look at the four pictures. What word connects them?</p>
+
+  <div class="topbar">
+    <span id="round">Question 1 / 8</span>
+    <span id="score">Score: 0</span>
+    <button id="teacherBtn" onclick="openTeacherSettings()" style="margin:0; padding:8px 12px; font-size:14px; background:#eee;">⚙ Teacher Settings</button>
+  </div>
+
+  <div class="pics" id="pics"></div>
+
+  <div class="question">
+    <div class="letter-lines" id="letterLines"></div>
+    <input id="answer" type="text" autocomplete="off" placeholder="Type your answer">
+    <br>
+    <button id="check">CHECK</button>
+    <button id="hint">HINT</button>
+    <button id="next" style="display:none;">NEXT</button>
+    <div id="message"></div>
+  </div>
+
+  <div class="instructions">Students can type the answer and press Enter.</div>
+</div>
+
+<script>
+const defaultQuestions = [
+  { pics:[["☀️",""],["🌻",""],["🕶️",""],["🌅",""]], answers:["sun"] },
+  { pics:[["🐱",""],["🐶",""],["🐰",""],["🐹",""]], answers:["animal","animals"] },
+  { pics:[["🍎",""],["🍌",""],["🍊",""],["🍓",""]], answers:["fruit","fruits"] },
+  { pics:[["🏃",""],["🏃‍♂️",""],["🏁",""],["🚗",""]], answers:["fast"] },
+  { pics:[["🌧️",""],["☔",""],["🌧️",""],["💦",""]], answers:["water"] },
+  { pics:[["📚",""],["🏫",""],["✏️",""],["👨‍🏫",""]], answers:["school"] },
+  { pics:[["❤️",""],["💗",""],["💕",""],["💘",""]], answers:["love"] },
+  { pics:[["🍞",""],["🥖",""],["🍞",""],["🥪",""]], answers:["bread"] }
+];
+
+let questions = JSON.parse(localStorage.getItem("fourPicsQuestions") || "null") || defaultQuestions;
+let current = 0;
+let score = 0;
+let answered = false;
+let hintUsed = false;
+
+const picsEl = document.getElementById("pics");
+const answerEl = document.getElementById("answer");
+const messageEl = document.getElementById("message");
+const checkBtn = document.getElementById("check");
+const nextBtn = document.getElementById("next");
+const hintBtn = document.getElementById("hint");
+const letterLinesEl = document.getElementById("letterLines");
+
+function saveQuestions() {
+  localStorage.setItem("fourPicsQuestions", JSON.stringify(questions));
+}
+
+function imageOrEmoji(p) {
+  if (p[0].startsWith("data:image/")) {
+    return `<img src="${p[0]}" alt="" style="width:100%;height:100%;object-fit:cover;">`;
+  }
+  return `<div class="emoji">${p[0]}</div>`;
+}
+
+function loadQuestion() {
+  const q = questions[current];
+  const answerLength = q.answers[0].replace(/[^a-zA-Z]/g, "").length;
+  letterLinesEl.innerHTML = Array.from(
+    {length: answerLength},
+    () => '<span class="letter-line"></span>'
+  ).join("");
+
+  document.getElementById("round").textContent =
+    `Question ${current + 1} / ${questions.length}`;
+  document.getElementById("score").textContent = `Score: ${score}`;
+
+  picsEl.innerHTML = q.pics.map(p => `
+    <div class="pic">${imageOrEmoji(p)}</div>
+  `).join("");
+
+  answerEl.value = "";
+  answerEl.disabled = false;
+  messageEl.textContent = "";
+  messageEl.className = "";
+  checkBtn.style.display = "inline-block";
+  nextBtn.style.display = "none";
+  hintBtn.style.display = "inline-block";
+  hintBtn.disabled = false;
+  answered = false;
+  hintUsed = false;
+  answerEl.focus();
+}
+
+function checkAnswer() {
+  if (answered) return;
+  const answer = answerEl.value.trim().toLowerCase();
+  if (!answer) {
+    messageEl.textContent = "Please type an answer.";
+    messageEl.className = "wrong";
+    return;
+  }
+
+  if (questions[current].answers.map(a => a.toLowerCase()).includes(answer)) {
+    score += hintUsed ? 1 : 2;
+    messageEl.textContent = `Correct! 🎉  +${hintUsed ? 1 : 2} points`;
+    messageEl.className = "correct";
+    answered = true;
+    answerEl.disabled = true;
+    checkBtn.style.display = "none";
+    hintBtn.style.display = "none";
+    nextBtn.style.display = "inline-block";
+    document.getElementById("score").textContent = `Score: ${score}`;
+  } else {
+    messageEl.textContent = "Try again!";
+    messageEl.className = "wrong";
+  }
+}
+
+function showHint() {
+  if (answered || hintUsed) return;
+
+  const word = questions[current].answers[0].trim();
+  if (!word) return;
+
+  hintUsed = true;
+
+  // The answer length is already shown by the lines,
+  // so the hint only reveals the first letter.
+  messageEl.innerHTML =
+    `Hint: The word starts with <b>${word[0].toUpperCase()}</b>.`;
+  messageEl.className = "hint";
+
+  hintBtn.disabled = true;
+  answerEl.focus();
+}
+
+function nextQuestion() {
+  if (current < questions.length - 1) {
+    current++;
+    loadQuestion();
+  } else {
+    picsEl.innerHTML = "";
+    document.getElementById("round").textContent = "Finished!";
+    document.getElementById("score").textContent = `Final Score: ${score}`;
+    document.querySelector(".question").innerHTML = `
+      <h2>Great job! 🎉</h2>
+      <p style="font-size:22px;">Your score: <b>${score}</b> / ${questions.length * 2}</p>
+      <button onclick="location.reload()">PLAY AGAIN</button>
+    `;
+  }
+}
+
+function openTeacherSettings() {
+  let rows = questions.map((q, i) => `
+    <div class="teacher-card">
+      <div class="teacher-title">Question ${i + 1}</div>
+      <label>Answer:
+        <input class="teacher-answer" data-i="${i}" value="${q.answers[0].replace(/"/g,'&quot;')}">
+      </label>
+      <div class="upload-grid">
+        ${q.pics.map((p, j) => `
+          <div class="upload-item">
+            <div class="preview" id="preview-${i}-${j}">
+              ${imageOrEmoji(p)}
+            </div>
+            <label class="file-label">
+              Choose Picture ${j + 1}
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/gif"
+                     class="teacher-file" data-i="${i}" data-j="${j}">
+            </label>
+            <button type="button" class="small-btn emoji-picker-btn"
+              data-i="${i}" data-j="${j}">
+              Choose Emoji
+            </button>
+          </div>
+        `).join("")}
+      </div>
+      <button class="delete-question" data-i="${i}">Delete Question</button>
+    </div>
+  `).join("");
+
+  const modal = document.createElement("div");
+  modal.id = "teacherModal";
+  modal.innerHTML = `
+    <div class="teacher-modal">
+      <h2>⚙️ Teacher Settings</h2>
+      <p class="teacher-note">
+        Add your own pictures. PNG, JPG, WEBP, and GIF are supported.
+        Pictures are saved in this browser for offline use.
+      </p>
+      <div id="teacherQuestions">${rows}</div>
+      <div class="teacher-actions">
+        <button type="button" id="addTeacherQuestion">＋ Add Question</button>
+        <button id="saveTeacher">💾 Save & Close</button>
+        <button id="resetTeacher">↺ Reset Sample Questions</button>
+        <button id="closeTeacher">Cancel</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  modal.querySelectorAll(".teacher-file").forEach(input => {
+    input.addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const i = Number(e.target.dataset.i);
+      const j = Number(e.target.dataset.j);
+      const reader = new FileReader();
+      reader.onload = () => {
+        questions[i].pics[j][0] = reader.result;
+        document.getElementById(`preview-${i}-${j}`).innerHTML =
+          `<img src="${reader.result}" alt="" style="width:100%;height:100%;object-fit:cover;">`;
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+
+  modal.querySelectorAll(".emoji-picker-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const i = Number(btn.dataset.i);
+      const j = Number(btn.dataset.j);
+
+      const emojis = [
+        "😀","😃","😄","😁","😆","😅","😂","🤣","😊","😎","😍","😘",
+        "🤔","😴","😮","😢","😭","😡","👍","👎","👏","🙏","💪","❤️",
+        "⭐","🌟","🔥","☀️","🌙","🌈","☁️","❄️","🌧️","⚡","🌍","🌎",
+        "🌸","🌳","🌲","🍎","🍌","🍓","🍊","🍇","🍉","🥕","🍔","🍕",
+        "🍟","🍩","🍪","🍰","🍦","⚽","🏀","🏈","🎾","🏆","🎮","🎵",
+        "🎸","🎁","📚","✏️","📱","💻","🚗","🚌","🚲","✈️","🚢","🏠",
+        "🏫","🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁",
+        "🐮","🐷","🐸","🐵","🐔","🐧","🐦","🐟","🐬","🦋","🐝","🌺"
+      ];
+
+      const existing = document.getElementById("emojiPickerOverlay");
+      if (existing) existing.remove();
+
+      const overlay = document.createElement("div");
+      overlay.id = "emojiPickerOverlay";
+      overlay.style.cssText =
+        "position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;" +
+        "align-items:center;justify-content:center;z-index:99999;";
+
+      const box = document.createElement("div");
+      box.style.cssText =
+        "background:white;border-radius:14px;padding:16px;width:min(430px,90vw);" +
+        "max-height:75vh;overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.3);";
+
+      const title = document.createElement("div");
+      title.textContent = "Choose an emoji";
+      title.style.cssText = "font-size:20px;font-weight:bold;margin-bottom:12px;text-align:center;";
+      box.appendChild(title);
+
+      const grid = document.createElement("div");
+      grid.style.cssText =
+        "display:grid;grid-template-columns:repeat(8,1fr);gap:6px;";
+
+      emojis.forEach(emoji => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = emoji;
+        b.style.cssText =
+          "font-size:27px;background:#f4f4f4;border:1px solid #ddd;" +
+          "border-radius:8px;padding:7px;cursor:pointer;";
+        b.addEventListener("click", () => {
+          questions[i].pics[j][0] = emoji;
+          const preview = document.getElementById(`preview-${i}-${j}`);
+          if (preview) preview.innerHTML = `<div class="emoji">${emoji}</div>`;
+          overlay.remove();
+        });
+        grid.appendChild(b);
+      });
+
+      box.appendChild(grid);
+
+      const close = document.createElement("button");
+      close.type = "button";
+      close.textContent = "Cancel";
+      close.style.cssText =
+        "display:block;margin:14px auto 0;padding:8px 18px;border:1px solid #ccc;" +
+        "border-radius:8px;background:white;cursor:pointer;";
+      close.onclick = () => overlay.remove();
+      box.appendChild(close);
+
+      overlay.appendChild(box);
+      overlay.addEventListener("click", e => {
+        if (e.target === overlay) overlay.remove();
+      });
+      document.body.appendChild(overlay);
+    });
+  });
+
+  modal.querySelectorAll(".delete-question").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const i = Number(btn.dataset.i);
+      if (questions.length <= 1) return alert("You need at least one question.");
+      questions.splice(i, 1);
+      modal.remove();
+      openTeacherSettings();
+    });
+  });
+
+  modal.querySelector("#addTeacherQuestion").addEventListener("click", function () {
+    questions.push({
+      pics: [["🌟",""],["🌈",""],["🐸",""],["🍀",""]],
+      answers: ["answer"]
+    });
+    saveQuestions();
+    modal.remove();
+    openTeacherSettings();
+  });
+
+  modal.querySelector("#saveTeacher").onclick = () => {
+    modal.querySelectorAll(".teacher-answer").forEach(inp => {
+      const i = Number(inp.dataset.i);
+      const value = inp.value.trim().toLowerCase();
+      if (value) questions[i].answers = [value];
+    });
+    saveQuestions();
+    current = Math.min(current, questions.length - 1);
+    score = 0;
+    loadQuestion();
+    modal.remove();
+  };
+
+  modal.querySelector("#resetTeacher").onclick = () => {
+    if (confirm("Reset all questions to the original samples?")) {
+      questions = JSON.parse(JSON.stringify(defaultQuestions));
+      saveQuestions();
+      modal.remove();
+      openTeacherSettings();
+    }
+  };
+
+  modal.querySelector("#closeTeacher").onclick = () => modal.remove();
+}
+
+checkBtn.onclick = checkAnswer;
+hintBtn.onclick = showHint;
+nextBtn.onclick = nextQuestion;
+answerEl.addEventListener("keydown", e => {
+  if (e.key === "Enter") checkAnswer();
+});
+
+loadQuestion();
+</script>
+</body>
+</html>

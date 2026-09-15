@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucky Hit - Mystery Challenge</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Rajdhani:wght@600;700&display=swap');
+
+        * { box-sizing: border-box; }
+        body {
+            background: radial-gradient(circle at center, #1e130c 0%, #0a0604 100%);
+            color: #f0e6d2;
+            font-family: 'Rajdhani', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px 10px;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin: 0;
+            font-family: 'Cinzel', serif;
+            font-size: 2.4rem;
+            font-weight: 900;
+            color: #f7d37d;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            text-shadow: 0 0 10px rgba(247, 211, 125, 0.5), 2px 4px 8px rgba(0,0,0,0.9);
+        }
+
+        .subtitle {
+            font-family: 'Cinzel', serif;
+            font-size: 0.9rem;
+            color: #b39268;
+            margin-bottom: 16px;
+            letter-spacing: 2px;
+            font-style: italic;
+        }
+
+        .game-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(145deg, #2e1d13 0%, #170d07 100%);
+            padding: 18px;
+            border-radius: 16px;
+            border: 3px solid #b8860b;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.9), inset 0 0 15px rgba(212, 175, 55, 0.15);
+            position: relative;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 440px;
+            background: linear-gradient(180deg, #180f0a 0%, #0d0704 100%);
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 1px solid #735029;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.8), 0 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .target-box {
+            color: #fff;
+            background: rgba(212, 175, 55, 0.1);
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            display: flex;
+            align-items: center;
+        }
+
+        #targetName {
+            font-weight: 900;
+            margin-left: 6px;
+            color: #e0e0e0;
+        }
+
+        .level-bar {
+            width: 440px;
+            background: #150d08;
+            border: 1px solid #573a1d;
+            padding: 6px 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+            color: #d4af37;
+        }
+
+        select, button.small-btn {
+            background: linear-gradient(180deg, #4d3119 0%, #2b1a0d 100%);
+            color: #f7d37d;
+            border: 1px solid #8b5a2b;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            transition: all 0.2s ease;
+        }
+
+        select:hover, button.small-btn:hover {
+            border-color: #f7d37d;
+            box-shadow: 0 0 8px rgba(247, 211, 125, 0.4);
+        }
+
+        canvas {
+            border: 6px solid #4a2e18;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.9), inset 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        .controls {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #b8926a;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        /* Modal Overlay for Settings */
+        .modal {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.88);
+            border-radius: 14px;
+            z-index: 10;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background: linear-gradient(145deg, #2a1a10 0%, #150c07 100%);
+            border: 2px solid #d4af37;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+            padding: 24px;
+            border-radius: 10px;
+            width: 85%;
+            max-width: 320px;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            font-size: 1rem;
+        }
+
+        .setting-row select {
+            width: 110px;
+        }
+
+        .close-btn {
+            width: 100%;
+            margin-top: 12px;
+            background: linear-gradient(180deg, #96602e 0%, #5c3817 100%);
+            color: #fff;
+            border: 1px solid #d4af37;
+            padding: 8px;
+            font-weight: bold;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>LUCKY HIT</h1>
+    <div class="subtitle">"Test your luck on the board"</div>
+
+    <div class="game-panel">
+        <div class="hud">
+            <div>Score: <span id="score" style="color: #64ffda;">0</span></div>
+            <div class="target-box">
+                TARGET: <span id="targetName">???</span>
+            </div>
+            <div>Balls: <span id="balls" style="color: #ffb74d;">5</span></div>
+        </div>
+
+        <div class="level-bar">
+            <div>
+                Board: 
+                <select id="levelSelect" onchange="changeLevel(this.value)">
+                    <option value="1">Level 1: Classic Board</option>
+                    <option value="2">Level 2: Breezy Alley</option>
+                    <option value="3">Level 3: Moving Hazards</option>
+                    <option value="4">Level 4: High Bounce</option>
+                    <option value="5">Level 5: Chaotic Night</option>
+                </select>
+            </div>
+            <button class="small-btn" onclick="toggleSettings(true)">⚙ Settings</button>
+        </div>
+
+        <canvas id="board" width="440" height="520"></canvas>
+
+        <div class="controls">
+            <b>&larr; &rarr; Arrow Keys</b> / <b>A D</b> to align. <b>SPACEBAR</b> to drop / restart.
+        </div>
+
+        <!-- Settings Modal Overlay -->
+        <div id="settingsModal" class="modal">
+            <div class="modal-content">
+                <h3 style="color:#d4af37; margin-top:0; text-align:center; font-family:'Cinzel', serif;">BOARD SETTINGS</h3>
+                
+                <div class="setting-row">
+                    <label>Sound Effects:</label>
+                    <select id="settingSound">
+                        <option value="on">ON</option>
+                        <option value="off">OFF</option>
+                    </select>
+                </div>
+
+                <div class="setting-row">
+                    <label>Bounciness:</label>
+                    <select id="settingBounce">
+                        <option value="0.4">Low</option>
+                        <option value="0.6" selected>Normal</option>
+                        <option value="0.85">High Chaos</option>
+                    </select>
+                </div>
+
+                <div class="setting-row">
+                    <label>Wind Effect:</label>
+                    <select id="settingWind">
+                        <option value="off">Disabled</option>
+                        <option value="light">Light Drift</option>
+                        <option value="strong">Strong Gusts</option>
+                    </select>
+                </div>
+
+                <div class="setting-row">
+                    <label>Score Multiplier:</label>
+                    <select id="settingMult">
+                        <option value="1">1x (Standard)</option>
+                        <option value="2">2x (High Stakes)</option>
+                        <option value="3">3x (Extreme)</option>
+                    </select>
+                </div>
+
+                <button class="close-btn" onclick="applySettings()">Save & Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('board');
+        const ctx = canvas.getContext('2d');
+
+        const COLOR_MAP = {
+            'RED': '#ff3344',
+            'BLUE': '#3388ff',
+            'GREEN': '#33cc55',
+            'YELLOW': '#ffcc00',
+            'PURPLE': '#b833ff'
+        };
+        const COLOR_KEYS = Object.keys(COLOR_MAP);
+
+        // Core Game state
+        let score = 0;
+        let ballsLeft = 5;
+        let targetColorKey = 'RED';
+        let dropX = canvas.width / 2;
+        let isBallActive = false;
+        let isGameOver = false;
+        let currentLevel = 1;
+
+        // Custom Settings
+        let soundEnabled = true;
+        let customBounciness = 0.6;
+        let windSetting = 'off';
+        let scoreMultiplier = 1;
+
+        // Ball physics
+        let ball = {
+            x: 0, y: 0, vx: 0, vy: 0, radius: 11, gravity: 0.26
+        };
+
+        const pegs = [];
+        const slots = [];
+        const obstacles = [];
+        const slotCount = 5;
+        const slotWidth = canvas.width / slotCount;
+
+        // Pre-create Wood Texture Pattern
+        let woodPattern = null;
+        function createWoodPattern() {
+            const patternCanvas = document.createElement('canvas');
+            patternCanvas.width = 100;
+            patternCanvas.height = 100;
+            const pCtx = patternCanvas.getContext('2d');
+
+            pCtx.fillStyle = '#2b1a0e';
+            pCtx.fillRect(0, 0, 100, 100);
+
+            // Wood Grain Lines
+            pCtx.strokeStyle = 'rgba(15, 8, 4, 0.22)';
+            pCtx.lineWidth = 3;
+            for (let i = -50; i < 150; i += 8) {
+                pCtx.beginPath();
+                pCtx.moveTo(i, 0);
+                pCtx.bezierCurveTo(i + 20, 30, i - 10, 70, i + 10, 100);
+                pCtx.stroke();
+            }
+            woodPattern = ctx.createPattern(patternCanvas, 'repeat');
+        }
+
+        // Audio synthesis for ball peg bounces
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playPegSound() {
+            if (!soundEnabled) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(550 + Math.random() * 450, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.08);
+        }
+
+        function playScoreSound(isWin) {
+            if (!soundEnabled) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(isWin ? 523 : 180, audioCtx.currentTime);
+            if (isWin) {
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.25);
+            } else {
+                osc.frequency.exponentialRampToValueAtTime(90, audioCtx.currentTime + 0.25);
+            }
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+
+        // Setup Board Pin Grid
+        function setupBoard(level) {
+            pegs.length = 0;
+            obstacles.length = 0;
+
+            let rows = 8;
+            let startY = 80;
+            let spacingY = 42;
+
+            if (level == 1) {
+                rows = 8;
+            } else if (level == 2) {
+                rows = 10;
+                spacingY = 35;
+            } else if (level == 3) {
+                rows = 7;
+                obstacles.push({ x: 100, y: 220, w: 70, h: 10, vx: 2 });
+            } else if (level == 4) {
+                rows = 9;
+                obstacles.push({ x: 50, y: 180, w: 60, h: 10, vx: 2.5 });
+                obstacles.push({ x: 250, y: 280, w: 60, h: 10, vx: -2.5 });
+            } else if (level == 5) {
+                rows = 11;
+                spacingY = 30;
+                obstacles.push({ x: 80, y: 160, w: 80, h: 12, vx: 3 });
+                obstacles.push({ x: 200, y: 260, w: 80, h: 12, vx: -3 });
+            }
+
+            for (let r = 0; r < rows; r++) {
+                const isEven = (r % 2 === 0);
+                const cols = isEven ? 8 : 7;
+                
+                const margin = isEven ? 28 : 54;
+                const availableWidth = canvas.width - (margin * 2);
+                const spacingX = availableWidth / (cols - 1);
+
+                for (let c = 0; c < cols; c++) {
+                    pegs.push({
+                        x: margin + (c * spacingX),
+                        y: startY + r * spacingY,
+                        radius: 7
+                    });
+                }
+            }
+        }
+
+        function initSlots() {
+            slots.length = 0;
+            for (let i = 0; i < slotCount; i++) {
+                slots.push({
+                    x: i * slotWidth,
+                    width: slotWidth,
+                    colorKey: COLOR_KEYS[i]
+                });
+            }
+            shuffleSlots();
+        }
+
+        function shuffleSlots() {
+            const shuffled = [...COLOR_KEYS].sort(() => Math.random() - 0.5);
+            for (let i = 0; i < slotCount; i++) {
+                slots[i].colorKey = shuffled[i];
+            }
+        }
+
+        function pickNewTarget() {
+            targetColorKey = COLOR_KEYS[Math.floor(Math.random() * COLOR_KEYS.length)];
+            // Keep color hidden for Mystery Challenge
+            const targetElem = document.getElementById('targetName');
+            targetElem.textContent = "???";
+            targetElem.style.color = "#ffffff";
+        }
+
+        function changeLevel(lvl) {
+            currentLevel = parseInt(lvl);
+            resetGame(true);
+        }
+
+        function resetGame(resetScore = true) {
+            if (resetScore) score = 0;
+            ballsLeft = 5;
+            isBallActive = false;
+            isGameOver = false;
+            dropX = canvas.width / 2;
+            document.getElementById('score').textContent = score;
+            document.getElementById('balls').textContent = ballsLeft;
+            setupBoard(currentLevel);
+            initSlots();
+            pickNewTarget();
+        }
+
+        function dropBall() {
+            if (isBallActive || isGameOver || ballsLeft <= 0) return;
+            isBallActive = true;
+            ball.x = dropX;
+            ball.y = 40;
+            ball.vx = (Math.random() - 0.5) * 1.2;
+            ball.vy = 0;
+            ballsLeft--;
+            document.getElementById('balls').textContent = ballsLeft;
+        }
+
+        function toggleSettings(show) {
+            document.getElementById('settingsModal').style.display = show ? 'flex' : 'none';
+        }
+
+        function applySettings() {
+            soundEnabled = document.getElementById('settingSound').value === 'on';
+            customBounciness = parseFloat(document.getElementById('settingBounce').value);
+            windSetting = document.getElementById('settingWind').value;
+            scoreMultiplier = parseInt(document.getElementById('settingMult').value);
+            toggleSettings(false);
+        }
+
+        // Physics Updates
+        function update() {
+            for (let obs of obstacles) {
+                obs.x += obs.vx;
+                if (obs.x <= 12 || obs.x + obs.w >= canvas.width - 12) {
+                    obs.vx *= -1;
+                }
+            }
+
+            if (!isBallActive) return;
+
+            if (windSetting === 'light') {
+                ball.vx += 0.03;
+            } else if (windSetting === 'strong') {
+                ball.vx += (Math.random() - 0.48) * 0.12;
+            }
+
+            ball.vy += ball.gravity;
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+
+            // Side Wall Bounce Mechanics
+            if (ball.x - ball.radius < 12) {
+                ball.x = 12 + ball.radius;
+                ball.vx = Math.abs(ball.vx * customBounciness) + 0.8;
+                playPegSound();
+            } else if (ball.x + ball.radius > canvas.width - 12) {
+                ball.x = canvas.width - 12 - ball.radius;
+                ball.vx = -Math.abs(ball.vx * customBounciness) - 0.8;
+                playPegSound();
+            }
+
+            // Metallic Peg Collisions
+            for (let peg of pegs) {
+                const dx = ball.x - peg.x;
+                const dy = ball.y - peg.y;
+                const dist = Math.hypot(dx, dy);
+                const minDist = ball.radius + peg.radius;
+
+                if (dist < minDist) {
+                    const nx = dx / dist;
+                    const ny = dy / dist;
+
+                    ball.x = peg.x + nx * minDist;
+                    ball.y = peg.y + ny * minDist;
+
+                    const dot = ball.vx * nx + ball.vy * ny;
+                    ball.vx = (ball.vx - 2 * dot * nx) * customBounciness;
+                    ball.vy = (ball.vy - 2 * dot * ny) * customBounciness;
+
+                    ball.vx += (Math.random() - 0.5) * 0.8;
+                    playPegSound();
+                }
+            }
+
+            // Obstacles Collision
+            for (let obs of obstacles) {
+                if (ball.x + ball.radius > obs.x && ball.x - ball.radius < obs.x + obs.w &&
+                    ball.y + ball.radius > obs.y && ball.y - ball.radius < obs.y + obs.h) {
+                    ball.vy *= -customBounciness;
+                    ball.y = obs.y - ball.radius;
+                    playPegSound();
+                }
+            }
+
+            // Slot Detection
+            if (ball.y + ball.radius >= canvas.height - 45) {
+                const slotIndex = Math.floor(ball.x / slotWidth);
+                const landedSlot = slots[Math.min(Math.max(slotIndex, 0), slotCount - 1)];
+
+                if (landedSlot) {
+                    if (landedSlot.colorKey === targetColorKey) {
+                        score += 50 * scoreMultiplier;
+                        playScoreSound(true);
+                    } else {
+                        score = Math.max(0, score - (10 * scoreMultiplier));
+                        playScoreSound(false);
+                    }
+                    document.getElementById('score').textContent = score;
+                }
+
+                isBallActive = false;
+                shuffleSlots();
+                pickNewTarget();
+
+                if (ballsLeft <= 0) {
+                    isGameOver = true;
+                }
+            }
+        }
+
+        // High-Quality Metallic Spheres (Ball and Pins)
+        function draw3DSphere(x, y, radius, isSteel = false) {
+            ctx.beginPath();
+            ctx.ellipse(x + 3, y + 4, radius, radius * 0.7, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+            ctx.fill();
+
+            const grad = ctx.createRadialGradient(
+                x - radius * 0.35, y - radius * 0.35, radius * 0.05,
+                x, y, radius
+            );
+
+            if (isSteel) {
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(0.3, '#e8e8e8');
+                grad.addColorStop(0.75, '#8a8a8a');
+                grad.addColorStop(1, '#2b2b2b');
+            } else {
+                grad.addColorStop(0, '#fffbe6');
+                grad.addColorStop(0.25, '#ffd700');
+                grad.addColorStop(0.7, '#b8860b');
+                grad.addColorStop(1, '#4a3300');
+            }
+
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            ctx.strokeStyle = isSteel ? 'rgba(255,255,255,0.8)' : 'rgba(255, 223, 128, 0.8)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        // Render Graphics
+        function draw() {
+            if (!woodPattern) createWoodPattern();
+
+            ctx.fillStyle = woodPattern;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const innerGrad = ctx.createRadialGradient(
+                canvas.width/2, canvas.height/2, 100,
+                canvas.width/2, canvas.height/2, 300
+            );
+            innerGrad.addColorStop(0, 'rgba(0,0,0,0)');
+            innerGrad.addColorStop(1, 'rgba(0,0,0,0.65)');
+            ctx.fillStyle = innerGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Side Frames
+            const frameGradLeft = ctx.createLinearGradient(0, 0, 12, 0);
+            frameGradLeft.addColorStop(0, '#5c3817');
+            frameGradLeft.addColorStop(0.5, '#3b220c');
+            frameGradLeft.addColorStop(1, '#1f1105');
+            ctx.fillStyle = frameGradLeft;
+            ctx.fillRect(0, 0, 12, canvas.height);
+
+            const frameGradRight = ctx.createLinearGradient(canvas.width - 12, 0, canvas.width, 0);
+            frameGradRight.addColorStop(0, '#1f1105');
+            frameGradRight.addColorStop(0.5, '#3b220c');
+            frameGradRight.addColorStop(1, '#5c3817');
+            ctx.fillStyle = frameGradRight;
+            ctx.fillRect(canvas.width - 12, 0, 12, canvas.height);
+
+            // Aiming Drop Line
+            if (!isBallActive && !isGameOver) {
+                ctx.strokeStyle = 'rgba(247, 211, 125, 0.4)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 6]);
+                ctx.beginPath();
+                ctx.moveTo(dropX, 15);
+                ctx.lineTo(dropX, canvas.height - 50);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                draw3DSphere(dropX, 40, ball.radius, true);
+            }
+
+            // Draw Brass Pins
+            for (let peg of pegs) {
+                draw3DSphere(peg.x, peg.y, peg.radius, false);
+            }
+
+            // Moving Obstacles
+            for (let obs of obstacles) {
+                ctx.fillStyle = '#6e1a1a';
+                ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+                ctx.strokeStyle = '#d4af37';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+            }
+
+            // Bottom Slots
+            const slotY = canvas.height - 50;
+            for (let i = 0; i < slots.length; i++) {
+                const slot = slots[i];
+                const isTarget = (slot.colorKey === targetColorKey);
+
+                ctx.fillStyle = COLOR_MAP[slot.colorKey];
+                ctx.fillRect(slot.x + 3, slotY, slot.width - 6, 45);
+
+                const slotGrad = ctx.createLinearGradient(0, slotY, 0, slotY + 45);
+                slotGrad.addColorStop(0, 'rgba(255,255,255,0.4)');
+                slotGrad.addColorStop(0.4, 'rgba(255,255,255,0.05)');
+                slotGrad.addColorStop(1, 'rgba(0,0,0,0.4)');
+                ctx.fillStyle = slotGrad;
+                ctx.fillRect(slot.x + 3, slotY, slot.width - 6, 45);
+
+                // Highlight border target indicator
+                if (isTarget) {
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(slot.x + 4, slotY + 1, slot.width - 8, 42);
+                }
+
+                ctx.fillStyle = '#170c06';
+                ctx.fillRect(slot.x, slotY - 10, 4, 60);
+                ctx.fillStyle = '#4a2c13';
+                ctx.fillRect(slot.x + 1, slotY - 10, 2, 60);
+            }
+
+            // Draw Active Ball
+            if (isBallActive) {
+                draw3DSphere(ball.x, ball.y, ball.radius, true);
+            }
+
+            // Game Over Screen Overlay
+            if (isGameOver) {
+                ctx.fillStyle = 'rgba(10, 5, 2, 0.88)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = '#f7d37d';
+                ctx.font = 'bold 34px "Cinzel", serif';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = '#d4af37';
+                ctx.shadowBlur = 10;
+                ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 30);
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '20px "Rajdhani", sans-serif';
+                ctx.fillText(`FINAL SCORE: ${score}`, canvas.width / 2, canvas.height / 2 + 10);
+
+                const pulse = Math.sin(Date.now() / 180) > 0;
+                ctx.fillStyle = pulse ? '#f7d37d' : '#888888';
+                ctx.font = 'bold 16px "Rajdhani", sans-serif';
+                ctx.fillText('PRESS SPACEBAR TO PLAY AGAIN', canvas.width / 2, canvas.height / 2 + 60);
+            }
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Event Listeners
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+
+                if (isGameOver) {
+                    resetGame(true);
+                    return;
+                }
+
+                if (!isBallActive) {
+                    dropBall();
+                }
+            }
+
+            if (isBallActive || isGameOver) return;
+
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                dropX = Math.max(28, dropX - 12);
+            } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                dropX = Math.min(canvas.width - 28, dropX + 12);
+            }
+        });
+
+        // Initialize
+        setupBoard(1);
+        initSlots();
+        pickNewTarget();
+        gameLoop();
+    </script>
+</body>
+</html>

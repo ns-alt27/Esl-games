@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>JHS 2 English Basketball Quiz</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: #0f172a;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      width: 100vw;
+      color: #fff;
+      overflow: hidden;
+      touch-action: none;
+    }
+    
+    #game-container {
+      position: relative;
+      width: 95vw;
+      height: calc(95vw * 0.6);
+      max-width: 950px;
+      max-height: 570px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(to bottom, #1e293b, #0f172a);
+      transition: background 0.4s ease;
+    }
+
+    @media (max-aspect-ratio: 16/10) {
+      #game-container {
+        height: 85vh;
+        width: calc(85vh * 1.6);
+      }
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Score & UI Top-Left */
+    #ui {
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      pointer-events: none;
+      z-index: 5;
+      display: flex;
+      gap: 15px;
+    }
+    .stat-box {
+      background: rgba(15, 23, 42, 0.75);
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .score-title {
+      font-size: clamp(9px, 1.2vw, 11px);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #9ca3af;
+    }
+    .score-val {
+      font-size: clamp(20px, 3vw, 28px);
+      font-weight: bold;
+      color: #f97316;
+      line-height: 1;
+    }
+
+    /* Top-Right Buttons Bar */
+    #top-buttons {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      z-index: 15;
+      display: flex;
+      gap: 10px;
+    }
+    .top-btn {
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      font-size: clamp(12px, 1.4vw, 14px);
+    }
+    #customize-btn { background: #8b5cf6; }
+    #customize-btn:hover { background: #7c3aed; }
+    #settings-btn { background: #3b82f6; }
+    #settings-btn:hover { background: #2563eb; }
+
+    /* Question Card Banner (At the Bottom) */
+    #question-card {
+      position: absolute;
+      bottom: 35px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(30, 41, 59, 0.95);
+      border: 2px solid #3b82f6;
+      border-radius: 12px;
+      padding: 10px 24px;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      z-index: 10;
+      max-width: 65%;
+      pointer-events: none;
+    }
+    #question-text {
+      font-size: clamp(14px, 2vw, 20px);
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    #controls-hint {
+      position: absolute;
+      bottom: 8px;
+      width: 100%;
+      text-align: center;
+      color: rgba(255,255,255,0.5);
+      font-size: clamp(9px, 1.2vw, 11px);
+      pointer-events: none;
+    }
+
+    /* Intro Overlay - Anime Michael */
+    #intro-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.95);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.4s ease;
+    }
+    .anime-character {
+      width: 130px;
+      height: 130px;
+      margin-bottom: 15px;
+      filter: drop-shadow(0 8px 15px rgba(0, 0, 0, 0.5));
+      animation: bounceChar 1.5s infinite alternate ease-in-out;
+    }
+    @keyframes bounceChar {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-8px); }
+    }
+    .speech-bubble {
+      background: #ffffff;
+      color: #0f172a;
+      padding: 14px 22px;
+      border-radius: 16px;
+      font-size: clamp(15px, 2.2vw, 22px);
+      font-weight: bold;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      position: relative;
+      margin-bottom: 25px;
+      text-align: center;
+      max-width: 85%;
+      border: 3px solid #38bdf8;
+    }
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 12px 12px 0;
+      border-style: solid;
+      border-color: #ffffff transparent;
+      display: block;
+      width: 0;
+    }
+
+    /* Game Over Overlay */
+    #gameover-overlay {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.92);
+      z-index: 150;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+    }
+    #gameover-overlay h1 {
+      font-size: clamp(32px, 5vw, 48px);
+      color: #ef4444;
+      margin-bottom: 10px;
+    }
+    #gameover-overlay p {
+      font-size: clamp(16px, 2.5vw, 22px);
+      color: #cbd5e1;
+      margin-bottom: 20px;
+    }
+
+    /* Modals Overlays */
+    .modal-overlay {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-content {
+      background: #1e293b;
+      width: 90%;
+      max-width: 600px;
+      max-height: 85%;
+      border-radius: 12px;
+      padding: 20px;
+      overflow-y: auto;
+      border: 1px solid #475569;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    .modal-content h2 { margin-bottom: 12px; color: #f97316; font-size: 18px; }
+    .modal-content h3 { margin: 15px 0 10px 0; color: #38bdf8; font-size: 15px; border-top: 1px solid #475569; padding-top: 12px; }
+    
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: block; font-size: 12px; margin-bottom: 4px; color: #94a3b8; }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #fff;
+    }
+    .btn-row { display: flex; gap: 10px; margin-top: 15px; }
+    .btn {
+      padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
+    }
+    .btn-add { background: #22c55e; color: #fff; }
+    .btn-close { background: #64748b; color: #fff; margin-left: auto; }
+    
+    .q-list { margin-top: 20px; border-top: 1px solid #475569; padding-top: 15px; }
+    .q-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .btn-del { background: #ef4444; color: #fff; padding: 4px 8px; font-size: 11px; }
+
+    /* Selection Grids in Customize Modal */
+    .option-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .selection-card {
+      background: #0f172a;
+      border: 2px solid #475569;
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .selection-card:hover {
+      border-color: #8b5cf6;
+    }
+    .selection-card.active {
+      border-color: #22c55e;
+      background: rgba(34, 197, 94, 0.1);
+    }
+    .selection-card h4 { color: #f8fafc; margin-bottom: 3px; font-size: 13px; }
+    .selection-card p { color: #94a3b8; font-size: 10px; }
+  </style>
+</head>
+<body>
+
+<div id="game-container">
+  
+  <!-- Modern Anime Character Michael with Manbun & Sleek Athletic Look -->
+  <div id="intro-overlay">
+    <svg class="anime-character" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+      <!-- Background Glow / Circle -->
+      <circle cx="60" cy="60" r="54" fill="#1e293b" stroke="#38bdf8" stroke-width="3"/>
+      
+      <!-- Manbun (Hair bun tied neatly on crown/top-back) -->
+      <circle cx="76" cy="22" r="9" fill="#78350f"/>
+      <circle cx="77" cy="21" r="6" fill="#92400e"/> <!-- Inner bun detail -->
+      <ellipse cx="73" cy="25" rx="3" ry="2" fill="#ef4444"/> <!-- Hair tie band -->
+
+      <!-- Body / Sport Hoodie -->
+      <path d="M28 102 L28 86 Q28 74 44 74 L76 74 Q92 74 92 86 L92 102 Z" fill="#1e40af"/>
+      <!-- Inner white shirt / collar -->
+      <polygon points="60,74 48,90 72,90" fill="#f8fafc"/>
+      <!-- Hoodie Lapels / V-neck -->
+      <path d="M44 74 L60 88 L52 74 Z" fill="#1d4ed8"/>
+      <path d="M76 74 L60 88 L68 74 Z" fill="#1d4ed8"/>
+      <!-- Hoodie Drawstrings -->
+      <line x1="56" y1="82" x2="56" y2="96" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+      <line x1="64" y1="82" x2="64" y2="96" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+
+      <!-- Neck -->
+      <rect x="52" y="62" width="16" height="14" fill="#fbcfe8"/>
+
+      <!-- Head Structure -->
+      <path d="M36 44 C36 26 46 20 60 20 C74 20 84 26 84 44 C84 62 72 68 60 68 C48 68 36 62 36 44 Z" fill="#fde047"/>
+
+      <!-- Ears -->
+      <circle cx="34" cy="45" r="5" fill="#fde047"/>
+      <circle cx="86" cy="45" r="5" fill="#fde047"/>
+      <path d="M34 43 Q36 45 34 47" stroke="#ca8a04" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M86 43 Q84 45 86 47" stroke="#ca8a04" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+
+      <!-- Sleek Styled Hair pulled back to bun -->
+      <path d="M36 44 Q32 25 50 18 Q68 15 78 22 Q72 32 68 35 Z" fill="#78350f"/>
+      <path d="M35 38 Q45 16 65 17 Q80 20 82 28 Q75 22 62 20 Q48 20 38 32 Z" fill="#92400e"/>
+
+      <!-- Athletic Headband -->
+      <path d="M35 36 Q60 30 85 36 L85 43 Q60 37 35 43 Z" fill="#ef4444"/>
+      <circle cx="60" cy="36.5" r="3" fill="#fbbf24"/>
+
+      <!-- Sharp Anime Eyes -->
+      <!-- Left Eye -->
+      <ellipse cx="47" cy="49" rx="4.5" ry="6.5" fill="#0f172a"/>
+      <ellipse cx="48.5" cy="47" rx="1.8" ry="2.8" fill="#ffffff"/>
+      <path d="M41 41 Q47 38 53 43" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+      <!-- Right Eye -->
+      <ellipse cx="73" cy="49" rx="4.5" ry="6.5" fill="#0f172a"/>
+      <ellipse cx="74.5" cy="47" rx="1.8" ry="2.8" fill="#ffffff"/>
+      <path d="M67 43 Q73 38 79 41" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+      <!-- Nose -->
+      <circle cx="60" cy="54" r="1" fill="#ca8a04"/>
+
+      <!-- Confident Anime Smirk -->
+      <path d="M52 59 Q60 65 68 58" stroke="#b45309" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M66 57 L69 60" stroke="#b45309" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+
+    <div class="speech-bubble">"Hello! My name is Michael. Let’s play basketball!"</div>
+    <button class="btn btn-add" style="font-size: 16px; padding: 10px 24px;" onclick="startGame()">Let's Play! 🏀</button>
+  </div>
+
+  <div id="ui">
+    <div class="stat-box">
+      <div class="score-title">Score</div>
+      <div class="score-val" id="score">0</div>
+    </div>
+    <div class="stat-box">
+      <div class="score-title">Streak</div>
+      <div class="score-val" id="streak" style="color: #22c55e;">0</div>
+    </div>
+    <div class="stat-box">
+      <div class="score-title">Lives</div>
+      <div class="score-val" id="lives" style="color: #ef4444;">❤️❤️❤️</div>
+    </div>
+  </div>
+
+  <!-- Top Right Navigation Buttons -->
+  <div id="top-buttons">
+    <button id="customize-btn" class="top-btn" onclick="toggleCustomize(true)">🎨 Customize</button>
+    <button id="settings-btn" class="top-btn" onclick="toggleSettings(true)">⚙️ Settings</button>
+  </div>
+
+  <!-- Question Banner at the Bottom -->
+  <div id="question-card">
+    <div id="question-text">Loading question...</div>
+  </div>
+
+  <div id="controls-hint">Touch, click, & drag from the left to aim and shoot!</div>
+  <canvas id="canvas"></canvas>
+
+  <!-- Game Over Screen -->
+  <div id="gameover-overlay">
+    <h1>GAME OVER</h1>
+    <p>You ran out of lives! Final Score: <span id="final-score" style="color: #f97316; font-weight: bold;">0</span></p>
+    <button class="btn btn-add" style="font-size: 16px; padding: 12px 24px;" onclick="restartGame()">Play Again</button>
+  </div>
+
+  <!-- Game Customization Modal -->
+  <div id="customize-overlay" class="modal-overlay">
+    <div class="modal-content">
+      <h2>Select Your Ball Type</h2>
+      <div class="option-grid">
+        <div class="selection-card" id="ball-classic" onclick="setBallType('classic')">
+          <h4>🏀 Classic Basketball</h4>
+          <p>Traditional orange leather.</p>
+        </div>
+        <div class="selection-card" id="ball-cyber" onclick="setBallType('cyber')">
+          <h4>⚡ Cyberpunk Laser</h4>
+          <p>Glowing futuristic purple.</p>
+        </div>
+        <div class="selection-card" id="ball-gold" onclick="setBallType('gold')">
+          <h4>👑 Golden Trophy</h4>
+          <p>Royal gold reflections.</p>
+        </div>
+        <div class="selection-card" id="ball-ice" onclick="setBallType('ice')">
+          <h4>❄️ Arctic Ice Ball</h4>
+          <p>Chilled frosty cyan blue.</p>
+        </div>
+      </div>
+
+      <h3>Select Background Theme</h3>
+      <div class="option-grid">
+        <div class="selection-card" id="bg-rooftop" onclick="setBackgroundTheme('rooftop')">
+          <h4>🌃 Midnight Rooftop</h4>
+          <p>Dark blue modern skyline night.</p>
+        </div>
+        <div class="selection-card" id="bg-sunset" onclick="setBackgroundTheme('sunset')">
+          <h4>🌅 Sunset Beach</h4>
+          <p>Warm twilight orange horizon.</p>
+        </div>
+        <div class="selection-card" id="bg-cyber" onclick="setBackgroundTheme('cyber')">
+          <h4>🌆 Cyberpunk Arena</h4>
+          <p>Neon dark purple grid environment.</p>
+        </div>
+        <div class="selection-card" id="bg-gym" onclick="setBackgroundTheme('gym')">
+          <h4>🪵 Indoor Gym</h4>
+          <p>Classic hardwood wall atmosphere.</p>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-close" onclick="toggleCustomize(false)">Close & Play</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Teacher Settings Modal -->
+  <div id="modal-overlay" class="modal-overlay">
+    <div class="modal-content">
+      <h2>Teacher Settings: Manage Questions</h2>
+      
+      <div class="form-group">
+        <label>Question Sentence (Use _____ for blank):</label>
+        <input type="text" id="input-q" placeholder="e.g. I want _____ soccer after school." />
+      </div>
+      <div class="form-group">
+        <label>Option 1 (Top Hoop):</label>
+        <input type="text" id="input-opt0" placeholder="e.g. to play" />
+      </div>
+      <div class="form-group">
+        <label>Option 2 (Middle Hoop):</label>
+        <input type="text" id="input-opt1" placeholder="e.g. play" />
+      </div>
+      <div class="form-group">
+        <label>Option 3 (Bottom Hoop):</label>
+        <input type="text" id="input-opt2" placeholder="e.g. playing" />
+      </div>
+      <div class="form-group">
+        <label>Correct Answer Hoop:</label>
+        <select id="input-correct">
+          <option value="0">Top Hoop (Option 1)</option>
+          <option value="1">Middle Hoop (Option 2)</option>
+          <option value="2">Bottom Hoop (Option 3)</option>
+        </select>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-add" onclick="addNewQuestion()">+ Add Question</button>
+        <button class="btn btn-close" onclick="toggleSettings(false)">Close & Play</button>
+      </div>
+
+      <div class="q-list">
+        <h3>Current Questions (<span id="q-count">0</span>)</h3>
+        <div id="q-list-items"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const container = document.getElementById('game-container');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const streakEl = document.getElementById('streak');
+const livesEl = document.getElementById('lives');
+const questionTextEl = document.getElementById('question-text');
+
+const BASE_WIDTH = 900;
+const BASE_HEIGHT = 540;
+let scaleFactor = 1;
+
+function resizeCanvas() {
+  const rect = container.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+  scaleFactor = rect.width / BASE_WIDTH;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+const DEFAULT_QUESTIONS = [
+  { q: "I want _____ soccer after school.", options: ["to play", "play", "playing"], correct: 0 },
+  { q: "We must _____ hard for the exam.", options: ["to study", "study", "studied"], correct: 1 },
+  { q: "Ken was _____ TV at 8 p.m. yesterday.", options: ["watch", "watched", "watching"], correct: 2 },
+  { q: "Soccer is more popular _____ baseball in UK.", options: ["than", "that", "as"], correct: 0 },
+  { q: "She went to Kyoto _____ old temples.", options: ["for visit", "to visit", "visited"], correct: 1 },
+  { q: "You don't _____ to get up early tomorrow.", options: ["must", "have", "should"], correct: 1 },
+  { q: "Mount Fuji is _____ than Mount Tsukuba.", options: ["high", "higher", "highest"], correct: 1 },
+  { q: "If it _____ tomorrow, I will stay home.", options: ["rains", "rained", "will rain"], correct: 0 },
+  { q: "I think that English is _____.", options: ["interest", "interesting", "interested"], correct: 1 },
+  { q: "There _____ two cats under the table.", options: ["is", "was", "are"], correct: 2 },
+  { q: "He has _____ his homework already.", options: ["do", "did", "done"], correct: 2 },
+  { q: "This camera is _____ than that one.", options: ["expensive", "more expensive", "most expensive"], correct: 1 },
+  { q: "Do you know the boy _____ is running fast?", options: ["who", "which", "whose"], correct: 0 },
+  { q: "The letter _____ written by Mary.", options: ["is", "was", "were"], correct: 1 },
+  { q: "I am looking forward to _____ you.", options: ["see", "seeing", "saw"], correct: 1 },
+  { q: "She enjoys _____ books in her free time.", options: ["read", "to read", "reading"], correct: 2 },
+  { q: "Kyoto is one of _____ cities in Japan.", options: ["famous", "more famous", "the most famous"], correct: 2 },
+  { q: "Open the door, _____ you?", options: ["will", "do", "are"], correct: 0 },
+  { q: "He speaks English as _____ as his brother.", options: ["well", "better", "best"], correct: 0 },
+  { q: "I was sleeping _____ the phone rang.", options: ["while", "when", "during"], correct: 1 }
+];
+
+let QUESTIONS = JSON.parse(localStorage.getItem('jhs_questions')) || DEFAULT_QUESTIONS;
+
+function saveQuestions() {
+  localStorage.setItem('jhs_questions', JSON.stringify(QUESTIONS));
+  renderQuestionList();
+}
+
+let currentQuestion = null;
+let score = 0;
+let streak = 0;
+let lives = 3;
+let isDragging = false;
+let isBallFlying = false;
+let isFireball = false;
+let isGameOver = false;
+
+// Customization states
+let selectedBallType = localStorage.getItem('jhs_ball_type') || 'classic';
+let selectedBgTheme = localStorage.getItem('jhs_bg_theme') || 'rooftop';
+
+function applyBackgroundTheme(theme) {
+  if (theme === 'rooftop') {
+    container.style.background = 'linear-gradient(to bottom, #1e293b, #0f172a)';
+  } else if (theme === 'sunset') {
+    container.style.background = 'linear-gradient(to bottom, #431407, #7c2d12, #18181b)';
+  } else if (theme === 'cyber') {
+    container.style.background = 'linear-gradient(to bottom, #3b0764, #1e1b4b, #09090b)';
+  } else if (theme === 'gym') {
+    container.style.background = 'linear-gradient(to bottom, #27272a, #18181b)';
+  }
+}
+applyBackgroundTheme(selectedBgTheme);
+
+const GRAVITY = 0.35;
+const BOUNCE = 0.65;
+const SLINGSHOT_SENSITIVITY = 0.16;
+
+const DEFAULT_REST_X = 130;
+const DEFAULT_REST_Y = 380;
+
+const ball = {
+  x: DEFAULT_REST_X,
+  y: DEFAULT_REST_Y,
+  startX: DEFAULT_REST_X,
+  startY: DEFAULT_REST_Y,
+  vx: 0,
+  vy: 0,
+  rotation: 0,
+  vRot: 0,
+  radius: 18
+};
+
+let fireParticles = [];
+
+const hoops = [
+  { id: 0, x: 740, y: 140, label: "", width: 52, backboardWidth: 6, backboardHeight: 55, rimRadius: 3.5 },
+  { id: 1, x: 740, y: 260, label: "", width: 52, backboardWidth: 6, backboardHeight: 55, rimRadius: 3.5 },
+  { id: 2, x: 740, y: 380, label: "", width: 52, backboardWidth: 6, backboardHeight: 55, rimRadius: 3.5 }
+];
+
+function updateLivesUI() {
+  let hearts = "";
+  for (let i = 0; i < lives; i++) hearts += "❤️";
+  livesEl.innerText = hearts;
+}
+
+function startGame() {
+  const intro = document.getElementById('intro-overlay');
+  intro.style.opacity = '0';
+  setTimeout(() => {
+    intro.style.display = 'none';
+  }, 400);
+  loadNextQuestion();
+}
+
+function loadNextQuestion() {
+  if (isGameOver) return;
+  if (QUESTIONS.length === 0) {
+    questionTextEl.innerText = "No questions added! Click ⚙️ Settings.";
+    for (let i = 0; i < 3; i++) hoops[i].label = "";
+    return;
+  }
+
+  const randomIndex = Math.floor(Math.random() * QUESTIONS.length);
+  currentQuestion = QUESTIONS[randomIndex];
+  
+  isFireball = (Math.random() < 0.25);
+
+  if (isFireball) {
+    questionTextEl.innerHTML = `<span style="color: #f97316; text-shadow: 0 0 10px rgba(249, 115, 22, 0.6);">🔥 FIREBALL ROUND! (2x POINTS!) 🔥</span><br>${currentQuestion.q}`;
+  } else {
+    questionTextEl.innerText = currentQuestion.q;
+  }
+
+  for (let i = 0; i < 3; i++) {
+    hoops[i].label = currentQuestion.options[i];
+  }
+}
+
+function toggleSettings(show) {
+  document.getElementById('modal-overlay').style.display = show ? 'flex' : 'none';
+  if (show) renderQuestionList();
+  else if (!isGameOver && document.getElementById('intro-overlay').style.display === 'none') loadNextQuestion();
+}
+
+function toggleCustomize(show) {
+  document.getElementById('customize-overlay').style.display = show ? 'flex' : 'none';
+  if (show) updateCustomizationUI();
+  else if (!isGameOver && document.getElementById('intro-overlay').style.display === 'none') loadNextQuestion();
+}
+
+function setBallType(type) {
+  selectedBallType = type;
+  localStorage.setItem('jhs_ball_type', type);
+  updateCustomizationUI();
+}
+
+function setBackgroundTheme(theme) {
+  selectedBgTheme = theme;
+  localStorage.setItem('jhs_bg_theme', theme);
+  applyBackgroundTheme(theme);
+  updateCustomizationUI();
+}
+
+function updateCustomizationUI() {
+  ['classic', 'cyber', 'gold', 'ice'].forEach(t => {
+    const el = document.getElementById(`ball-${t}`);
+    if (el) {
+      if (t === selectedBallType) el.classList.add('active');
+      else el.classList.remove('active');
+    }
+  });
+
+  ['rooftop', 'sunset', 'cyber', 'gym'].forEach(th => {
+    const el = document.getElementById(`bg-${th}`);
+    if (el) {
+      if (th === selectedBgTheme) el.classList.add('active');
+      else el.classList.remove('active');
+    }
+  });
+}
+
+function addNewQuestion() {
+  const qText = document.getElementById('input-q').value.trim();
+  const opt0 = document.getElementById('input-opt0').value.trim();
+  const opt1 = document.getElementById('input-opt1').value.trim();
+  const opt2 = document.getElementById('input-opt2').value.trim();
+  const correct = parseInt(document.getElementById('input-correct').value);
+
+  if (!qText || !opt0 || !opt1 || !opt2) {
+    alert("Please fill in the question and all 3 options!");
+    return;
+  }
+
+  QUESTIONS.push({
+    q: qText,
+    options: [opt0, opt1, opt2],
+    correct: correct
+  });
+
+  saveQuestions();
+
+  document.getElementById('input-q').value = '';
+  document.getElementById('input-opt0').value = '';
+  document.getElementById('input-opt1').value = '';
+  document.getElementById('input-opt2').value = '';
+}
+
+function deleteQuestion(idx) {
+  QUESTIONS.splice(idx, 1);
+  saveQuestions();
+}
+
+function renderQuestionList() {
+  document.getElementById('q-count').innerText = QUESTIONS.length;
+  const listEl = document.getElementById('q-list-items');
+  listEl.innerHTML = '';
+
+  QUESTIONS.forEach((q, idx) => {
+    const item = document.createElement('div');
+    item.className = 'q-item';
+    item.innerHTML = `
+      <div><strong>Q${idx + 1}:</strong> ${q.q}</div>
+      <button class="btn btn-del" onclick="deleteQuestion(${idx})">Delete</button>
+    `;
+    listEl.appendChild(item);
+  });
+}
+
+function restartGame() {
+  score = 0;
+  streak = 0;
+  lives = 3;
+  isGameOver = false;
+  scoreEl.innerText = score;
+  streakEl.innerText = streak;
+  updateLivesUI();
+  document.getElementById('gameover-overlay').style.display = 'none';
+  resetBall();
+  loadNextQuestion();
+}
+
+let netNodes = [[], [], []];
+let netConstraints = [[], [], []];
+const NET_COLS = 5;
+const NET_ROWS = 4;
+
+function initNets() {
+  for (let h = 0; h < 3; h++) {
+    netNodes[h] = [];
+    netConstraints[h] = [];
+    const hoop = hoops[h];
+    const rowSpacing = 8;
+
+    for (let r = 0; r < NET_ROWS; r++) {
+      for (let c = 0; c < NET_COLS; c++) {
+        const progress = r / (NET_ROWS - 1);
+        const taper = 1 - progress * 0.35; 
+        const currentWidth = hoop.width * taper;
+        const startX = hoop.x - currentWidth / 2;
+        const cSpacing = currentWidth / (NET_COLS - 1);
+
+        const x = startX + c * cSpacing;
+        const y = hoop.y + r * rowSpacing;
+
+        netNodes[h].push({ x: x, y: y, oldx: x, oldy: y, pinned: r === 0 });
+      }
+    }
+
+    for (let r = 0; r < NET_ROWS; r++) {
+      for (let c = 0; c < NET_COLS; c++) {
+        const idx = r * NET_COLS + c;
+
+        if (c < NET_COLS - 1) {
+          const rightIdx = idx + 1;
+          const dist = Math.hypot(netNodes[h][idx].x - netNodes[h][rightIdx].x, netNodes[h][idx].y - netNodes[h][rightIdx].y);
+          netConstraints[h].push({ p1: idx, p2: rightIdx, length: dist });
+        }
+
+        if (r < NET_ROWS - 1) {
+          const downIdx = idx + NET_COLS;
+          const dist = Math.hypot(netNodes[h][idx].x - netNodes[h][downIdx].x, netNodes[h][idx].y - netNodes[h][downIdx].y);
+          netConstraints[h].push({ p1: idx, p2: downIdx, length: dist });
+        }
+      }
+    }
+  }
+}
+
+function updateNets() {
+  for (let h = 0; h < 3; h++) {
+    for (let i = 0; i < netNodes[h].length; i++) {
+      const p = netNodes[h][i];
+      if (p.pinned) continue;
+
+      const vx = (p.x - p.oldx) * 0.92;
+      const vy = (p.y - p.oldy) * 0.92;
+
+      p.oldx = p.x;
+      p.oldy = p.y;
+      p.x += vx;
+      p.y += vy + 0.15;
+
+      const dx = p.x - ball.x;
+      const dy = p.y - ball.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist < ball.radius + 2) {
+        const angle = Math.atan2(dy, dx);
+        const push = (ball.radius + 2) - dist;
+        p.x += Math.cos(angle) * push;
+        p.y += Math.sin(angle) * push;
+
+        if (isBallFlying) {
+          ball.vx *= 0.98;
+          ball.vy *= 0.98;
+        }
+      }
+    }
+
+    for (let iter = 0; iter < 4; iter++) {
+      for (let i = 0; i < netConstraints[h].length; i++) {
+        const c = netConstraints[h][i];
+        const p1 = netNodes[h][c.p1];
+        const p2 = netNodes[h][c.p2];
+
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const dist = Math.hypot(dx, dy);
+        const diff = (dist - c.length) / (dist || 1);
+
+        const offsetX = dx * 0.5 * diff;
+        const offsetY = dy * 0.5 * diff;
+
+        if (!p1.pinned) { p1.x += offsetX; p1.y += offsetY; }
+        if (!p2.pinned) { p2.x -= offsetX; p2.y -= offsetY; }
+      }
+    }
+  }
+}
+
+let dragCurrent = { x: 0, y: 0 };
+
+function getCanvasPointerPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) / scaleFactor,
+    y: (e.clientY - rect.top) / scaleFactor
+  };
+}
+
+canvas.addEventListener('mousedown', (e) => onPointerDown(getCanvasPointerPos(e)));
+window.addEventListener('mousemove', (e) => onPointerMove(getCanvasPointerPos(e)));
+window.addEventListener('mouseup', onPointerUp);
+
+canvas.addEventListener('touchstart', (e) => {
+  if (e.touches.length > 0) onPointerDown(getCanvasPointerPos(e.touches[0]));
+});
+window.addEventListener('touchmove', (e) => {
+  if (e.touches.length > 0) onPointerMove(getCanvasPointerPos(e.touches[0]));
+});
+window.addEventListener('touchend', onPointerUp);
+
+function onPointerDown(pos) {
+  if (isBallFlying || isGameOver || document.getElementById('intro-overlay').style.display !== 'none') return;
+  
+  const clampedX = Math.min(Math.max(pos.x, 30), 250);
+  const clampedY = Math.min(Math.max(pos.y, 80), 460);
+
+  ball.startX = clampedX;
+  ball.startY = clampedY;
+  ball.x = clampedX;
+  ball.y = clampedY;
+  
+  isDragging = true;
+  dragCurrent = { x: pos.x, y: pos.y };
+}
+
+function onPointerMove(pos) {
+  if (!isDragging) return;
+  dragCurrent = pos;
+}
+
+function onPointerUp() {
+  if (!isDragging) return;
+  isDragging = false;
+
+  const dx = ball.startX - dragCurrent.x;
+  const dy = ball.startY - dragCurrent.y;
+
+  ball.vx = dx * SLINGSHOT_SENSITIVITY;
+  ball.vy = dy * SLINGSHOT_SENSITIVITY;
+  ball.vRot = ball.vx * 0.05;
+
+  if (Math.hypot(ball.vx, ball.vy) > 1.5) {
+    isBallFlying = true;
+  } else {
+    resetBall();
+  }
+}
+
+function resetBall() {
+  ball.startX = DEFAULT_REST_X;
+  ball.startY = DEFAULT_REST_Y;
+  ball.x = DEFAULT_REST_X;
+  ball.y = DEFAULT_REST_Y;
+  ball.vx = 0;
+  ball.vy = 0;
+  ball.rotation = 0;
+  ball.vRot = 0;
+  isBallFlying = false;
+  scoredThisShot = false;
+  fireParticles = [];
+}
+
+function resolveCircleCollision(circleX, circleY, radius) {
+  const dx = ball.x - circleX;
+  const dy = ball.y - circleY;
+  const dist = Math.hypot(dx, dy);
+
+  if (dist < ball.radius + radius) {
+    const nx = dx / dist;
+    const ny = dy / dist;
+
+    const overlap = (ball.radius + radius) - dist;
+    ball.x += nx * overlap;
+    ball.y += ny * overlap;
+
+    const dot = ball.vx * nx + ball.vy * ny;
+    ball.vx = (ball.vx - 2 * dot * nx) * BOUNCE;
+    ball.vy = (ball.vy - 2 * dot * ny) * BOUNCE;
+    ball.vRot = -ball.vRot * 0.8;
+  }
+}
+
+let scoredThisShot = false;
+let feedbackMessage = null;
+
+function update() {
+  if (isBallFlying) {
+    ball.vy += GRAVITY;
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+    ball.rotation += ball.vRot;
+
+    if (isFireball) {
+      for (let i = 0; i < 2; i++) {
+        fireParticles.push({
+          x: ball.x + (Math.random() - 0.5) * 15,
+          y: ball.y + (Math.random() - 0.5) * 15,
+          vx: (Math.random() - 0.5) * 1.5 - ball.vx * 0.2,
+          vy: (Math.random() - 0.5) * 1.5 - ball.vy * 0.2,
+          size: Math.random() * 8 + 6,
+          color: Math.random() > 0.4 ? '#f97316' : '#eab308',
+          alpha: 1.0
+        });
+      }
+    }
+
+    for (let h = 0; h < 3; h++) {
+      const hoop = hoops[h];
+      const frontRimX = hoop.x - hoop.width / 2;
+      const frontRimY = hoop.y;
+      const backRimX = hoop.x + hoop.width / 2;
+      const backRimY = hoop.y;
+
+      resolveCircleCollision(frontRimX, frontRimY, hoop.rimRadius);
+      resolveCircleCollision(backRimX, backRimY, hoop.rimRadius);
+
+      const bbX = hoop.x + hoop.width / 2 + 3;
+      const bbTop = hoop.y - hoop.backboardHeight / 2;
+      const bbBottom = hoop.y + hoop.backboardHeight / 2;
+
+      if (
+        ball.x + ball.radius > bbX &&
+        ball.x - ball.radius < bbX + hoop.backboardWidth &&
+        ball.y > bbTop &&
+        ball.y < bbBottom
+      ) {
+        ball.x = bbX - ball.radius;
+        ball.vx = -ball.vx * BOUNCE;
+        ball.vRot = -ball.vRot;
+      }
+
+      if (!scoredThisShot) {
+        if (
+          ball.x > frontRimX &&
+          ball.x < backRimX &&
+          ball.y > hoop.y - 5 &&
+          ball.y < hoop.y + 15 &&
+          ball.vy > 0
+        ) {
+          scoredThisShot = true;
+
+          if (currentQuestion && h === currentQuestion.correct) {
+            const pointsEarned = isFireball ? 20 : 10;
+            score += pointsEarned;
+            streak += 1;
+            scoreEl.innerText = score;
+            streakEl.innerText = streak;
+            
+            const msg = isFireball ? "🔥 FIREBALL SCORE! (+20) 🔥" : "GREAT JOB! 🎯 (+10)";
+            feedbackMessage = { text: msg, color: "#22c55e", y: 200, alpha: 1 };
+
+            setTimeout(() => {
+              loadNextQuestion();
+              resetBall();
+            }, 1200);
+          } else {
+            streak = 0;
+            streakEl.innerText = streak;
+            lives -= 1;
+            updateLivesUI();
+
+            if (lives <= 0) {
+              isGameOver = true;
+              document.getElementById('final-score').innerText = score;
+              document.getElementById('gameover-overlay').style.display = 'flex';
+              feedbackMessage = null;
+            } else {
+              feedbackMessage = { text: "WRONG HOOP! (-1 Life) ❌", color: "#ef4444", y: 200, alpha: 1 };
+              setTimeout(() => {
+                resetBall();
+              }, 1200);
+            }
+          }
+        }
+      }
+    }
+
+    if (ball.y + ball.radius > BASE_HEIGHT - 20) {
+      ball.y = BASE_HEIGHT - 20 - ball.radius;
+      ball.vy = -ball.vy * BOUNCE;
+      ball.vx *= 0.8;
+      ball.vRot *= 0.8;
+
+      if (Math.abs(ball.vy) < 1) {
+        resetBall();
+      }
+    }
+
+    if (ball.x < -20 || ball.x > BASE_WIDTH + 20) {
+      resetBall();
+    }
+  }
+
+  for (let i = fireParticles.length - 1; i >= 0; i--) {
+    let p = fireParticles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.alpha -= 0.04;
+    p.size *= 0.95;
+    if (p.alpha <= 0 || p.size <= 0.5) {
+      fireParticles.splice(i, 1);
+    }
+  }
+
+  updateNets();
+}
+
+function drawTrajectory() {
+  if (!isDragging) return;
+
+  const dx = ball.startX - dragCurrent.x;
+  const dy = ball.startY - dragCurrent.y;
+  let simVx = dx * SLINGSHOT_SENSITIVITY;
+  let simVy = dy * SLINGSHOT_SENSITIVITY;
+
+  let simX = ball.startX;
+  let simY = ball.startY;
+
+  ctx.fillStyle = isFireball ? "rgba(249, 115, 22, 0.6)" : "rgba(255, 255, 255, 0.4)";
+
+  for (let i = 0; i < 30; i++) {
+    simVy += GRAVITY;
+    simX += simVx;
+    simY += simVy;
+
+    ctx.beginPath();
+    ctx.arc(simX, simY, isFireball ? 4 : 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawCourt() {
+  ctx.fillStyle = '#432818';
+  ctx.fillRect(0, BASE_HEIGHT - 20, BASE_WIDTH, 20);
+  ctx.fillStyle = '#bb9457';
+  ctx.fillRect(0, BASE_HEIGHT - 20, BASE_WIDTH, 4);
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.setLineDash([6, 6]);
+  ctx.beginPath();
+  ctx.moveTo(250, 0);
+  ctx.lineTo(250, BASE_HEIGHT - 20);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawHoops() {
+  for (let h = 0; h < 3; h++) {
+    const hoop = hoops[h];
+    const frontRimX = hoop.x - hoop.width / 2;
+    const backRimX = hoop.x + hoop.width / 2;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(backRimX + 3, hoop.y - hoop.backboardHeight / 2, hoop.backboardWidth, hoop.backboardHeight);
+    ctx.strokeStyle = '#3b82f6';
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(backRimX + 3, hoop.y - hoop.backboardHeight / 2, hoop.backboardWidth, hoop.backboardHeight);
+
+    ctx.fillStyle = '#1e293b';
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    if (ctx.roundRect) {
+      ctx.roundRect(hoop.x - 145, hoop.y - 14, 85, 28, 6);
+    } else {
+      ctx.rect(hoop.x - 145, hoop.y - 14, 85, 28);
+    }
+    
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(hoop.label, hoop.x - 102.5, hoop.y);
+
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.lineWidth = 1.2;
+
+    for (let i = 0; i < netConstraints[h].length; i++) {
+      const c = netConstraints[h][i];
+      const p1 = netNodes[h][c.p1];
+      const p2 = netNodes[h][c.p2];
+
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+    }
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 4;
+    ctx.moveTo(frontRimX, hoop.y);
+    ctx.lineTo(backRimX, hoop.y);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(frontRimX, hoop.y, hoop.rimRadius, 0, Math.PI * 2);
+    ctx.arc(backRimX, hoop.y, hoop.rimRadius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawBasketball(r) {
+  ctx.save();
+  
+  const grad = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.05, 0, 0, r);
+  
+  if (selectedBallType === 'cyber') {
+    grad.addColorStop(0, '#c084fc');
+    grad.addColorStop(0.5, '#7c3aed');
+    grad.addColorStop(1, '#3b0764');
+  } else if (selectedBallType === 'gold') {
+    grad.addColorStop(0, '#fef08a');
+    grad.addColorStop(0.5, '#eab308');
+    grad.addColorStop(1, '#a16207');
+  } else if (selectedBallType === 'ice') {
+    grad.addColorStop(0, '#e0f2fe');
+    grad.addColorStop(0.5, '#38bdf8');
+    grad.addColorStop(1, '#0369a1');
+  } else {
+    grad.addColorStop(0, '#e8722a');
+    grad.addColorStop(0.65, '#b84414');
+    grad.addColorStop(1, '#591e05');
+  }
+
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(0, 0, r - 0.5, 0, Math.PI * 2);
+  ctx.clip();
+
+  function drawSeamChannel(drawPath) {
+    ctx.strokeStyle = (selectedBallType === 'cyber') ? 'rgba(56, 189, 248, 0.5)' : 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = 3.2;
+    ctx.beginPath();
+    drawPath();
+    ctx.stroke();
+
+    ctx.strokeStyle = selectedBallType === 'cyber' ? '#1e1b4b' : '#120d09';
+    ctx.lineWidth = 2.0;
+    ctx.beginPath();
+    drawPath();
+    ctx.stroke();
+  }
+
+  drawSeamChannel(() => { ctx.moveTo(-r, 0); ctx.lineTo(r, 0); });
+  drawSeamChannel(() => { ctx.moveTo(0, -r); ctx.lineTo(0, r); });
+  drawSeamChannel(() => { ctx.moveTo(-r * 0.7, -r * 0.71); ctx.bezierCurveTo(-r * 0.1, -r * 0.45, -r * 0.1, r * 0.45, -r * 0.7, r * 0.71); });
+  drawSeamChannel(() => { ctx.moveTo(r * 0.7, -r * 0.71); ctx.bezierCurveTo(r * 0.1, -r * 0.45, r * 0.1, r * 0.45, r * 0.7, r * 0.71); });
+
+  ctx.restore(); 
+
+  const rimGrad = ctx.createRadialGradient(0, 0, r * 0.75, 0, 0, r);
+  rimGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  rimGrad.addColorStop(1, selectedBallType === 'cyber' ? 'rgba(56, 189, 248, 0.4)' : 'rgba(0, 0, 0, 0.45)');
+  
+  ctx.fillStyle = rimGrad;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawBall() {
+  ctx.save();
+  
+  if (selectedBallType === 'cyber' || isFireball) {
+    ctx.shadowBlur = 25;
+    ctx.shadowColor = selectedBallType === 'cyber' ? '#c084fc' : '#f97316';
+  }
+
+  for (let i = 0; i < fireParticles.length; i++) {
+    let p = fireParticles[i];
+    ctx.save();
+    ctx.globalAlpha = p.alpha;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x - ball.x, p.y - ball.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.translate(ball.x, ball.y);
+  ctx.rotate(ball.rotation);
+  drawBasketball(ball.radius);
+  ctx.restore();
+}
+
+function drawFeedback() {
+  if (!feedbackMessage) return;
+
+  ctx.save();
+  ctx.font = 'bold 32px sans-serif';
+  ctx.fillStyle = feedbackMessage.color;
+  ctx.textAlign = 'center';
+  ctx.globalAlpha = feedbackMessage.alpha;
+  ctx.fillText(feedbackMessage.text, 450, feedbackMessage.y);
+  ctx.restore();
+
+  feedbackMessage.alpha -= 0.02;
+  feedbackMessage.y -= 0.5;
+
+  if (feedbackMessage.alpha <= 0) {
+    feedbackMessage = null;
+  }
+}
+
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.save();
+  ctx.scale(scaleFactor, scaleFactor);
+
+  drawCourt();
+  drawHoops();
+  drawTrajectory();
+  drawBall();
+  drawFeedback();
+
+  ctx.restore();
+}
+
+function gameLoop() {
+  update();
+  render();
+  requestAnimationFrame(gameLoop);
+}
+
+updateLivesUI();
+initNets();
+gameLoop();
+</script>
+</body>
+</html>

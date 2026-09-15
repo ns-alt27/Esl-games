@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ESL Slingshot Arcade - Custom Equipment Edition</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --bg-dark: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.85);
+        }
+
+        * {
+            box-sizing: border-box;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg-dark);
+            color: #f8fafc;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #header-ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: env(safe-area-inset-top, 8px) 12px 8px 12px;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        #header-ui * {
+            pointer-events: auto;
+        }
+
+        #sentence-card {
+            background: var(--panel-bg);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(8px);
+            padding: 6px 14px;
+            border-radius: 12px;
+            font-size: clamp(12px, 2.8vw, 18px);
+            font-weight: 700;
+            color: #fbbf24;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            flex-grow: 1;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .stats-badge {
+            background: var(--panel-bg);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            padding: 6px 10px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: clamp(11px, 2vw, 14px);
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        #lives-container {
+            display: flex;
+            gap: 2px;
+            font-size: clamp(12px, 2vw, 16px);
+        }
+
+        .heart {
+            color: #ef4444;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        .heart.lost {
+            opacity: 0.2;
+            transform: scale(0.8);
+            filter: grayscale(100%);
+        }
+
+        #btn-settings {
+            background: var(--panel-bg);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: clamp(14px, 2.5vw, 18px);
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #feedback-banner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: clamp(18px, 4vw, 28px);
+            font-weight: 900;
+            text-transform: uppercase;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 15;
+        }
+
+        #feedback-banner.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .banner-success { background: #22c55e; color: white; box-shadow: 0 10px 30px rgba(34, 197, 94, 0.4); }
+        .banner-error { background: #ef4444; color: white; box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4); }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 20;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 16px;
+            width: min(90%, 340px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .setting-row input[type="range"] {
+            width: 100px;
+        }
+
+        .setting-row select {
+            background: #0f172a;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .btn-action {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            margin-top: 10px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="header-ui">
+        <div id="sentence-card">Loading...</div>
+        <div class="stats-badge">
+            <div id="lives-container"></div>
+            <span><b id="val-score" style="color:white;">0</b></span>
+            <span>🔥<b id="val-streak" style="color:#f59e0b;">0</b></span>
+        </div>
+        <button id="btn-settings">⚙️</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+    <div id="feedback-banner">Correct!</div>
+
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 style="margin-top:0; font-size:18px;">Settings & Customization</h2>
+            
+            <div class="setting-row">
+                <label>Slingshot Style</label>
+                <select id="set-slingshot">
+                    <option value="wood">Classic Wood</option>
+                    <option value="cyber">Neon Cyber</option>
+                    <option value="gold">Golden Royal</option>
+                </select>
+            </div>
+
+            <div class="setting-row">
+                <label>Ball Type</label>
+                <select id="set-ball">
+                    <option value="orb">Energy Orb</option>
+                    <option value="fire">Fireball</option>
+                    <option value="coin">Golden Coin</option>
+                    <option value="tennis">Tennis Ball</option>
+                </select>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 12px 0;">
+
+            <div class="setting-row">
+                <label>Sound Effects</label>
+                <input type="checkbox" id="set-sfx" checked>
+            </div>
+            <div class="setting-row">
+                <label>Aiming Line</label>
+                <input type="checkbox" id="set-aim" checked>
+            </div>
+            <div class="setting-row">
+                <label>Starting Lives</label>
+                <input type="range" id="set-lives" min="1" max="5" step="1" value="3">
+            </div>
+            <div class="setting-row">
+                <label>Slingshot Power</label>
+                <input type="range" id="set-power" min="0.15" max="0.35" step="0.02" value="0.25">
+            </div>
+            <div class="setting-row">
+                <label>Gravity</label>
+                <input type="range" id="set-gravity" min="0.2" max="0.6" step="0.05" value="0.35">
+            </div>
+            <button class="btn-action" id="btn-close-settings">Save & Resume</button>
+        </div>
+    </div>
+
+    <div id="gameover-modal" class="modal-overlay">
+        <div class="modal-content" style="text-align: center;">
+            <h1 style="color: #ef4444; margin-top: 0; font-size: 24px;">GAME OVER</h1>
+            <p style="font-size: 14px; color: #cbd5e1;">You ran out of lives!</p>
+            <div style="background: #0f172a; padding: 10px; border-radius: 10px; margin: 10px 0;">
+                <p style="margin: 4px 0;">Final Score: <b id="go-score" style="color:#38bdf8;">0</b></p>
+                <p style="margin: 4px 0;">Best Streak: <b id="go-streak" style="color:#f59e0b;">0</b></p>
+            </div>
+            <button class="btn-action" id="btn-restart" style="background: #22c55e;">Play Again 🔄</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(type) {
+    if (!document.getElementById("set-sfx").checked) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (type === 'launch') {
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    } else if (type === 'hit-correct') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.35);
+    } else if (type === 'hit-wrong') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(110, audioCtx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+    } else if (type === 'gameover') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.6);
+        gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.6);
+    }
+}
+
+const questions = [
+    { sentence: "Yesterday, she _____ to the store.", options: ["went", "go", "gone"], answer: "went" },
+    { sentence: "Look! The dog is _____ in the park.", options: ["running", "run", "ran"], answer: "running" },
+    { sentence: "They have lived here _____ 2020.", options: ["since", "for", "at"], answer: "since" },
+    { sentence: "This book is _____ than that one.", options: ["more interesting", "most interesting", "interesting"], answer: "more interesting" },
+    { sentence: "If it rains tomorrow, we _____ stay home.", options: ["will", "would", "did"], answer: "will" },
+    { sentence: "He doesn't _____ coffee in the morning.", options: ["drink", "drinks", "drinking"], answer: "drink" },
+    { sentence: "There are _____ apples on the table.", options: ["many", "much", "little"], answer: "many" }
+];
+
+let currentQIndex = 0;
+let score = 0;
+let streak = 0;
+let maxStreak = 0;
+let maxLives = 3;
+let currentLives = 3;
+
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let W = 800, H = 450;
+let slingshotPos = { x: 140, y: 350 };
+let gameConfig = { 
+    power: 0.25, 
+    gravity: 0.35,
+    slingshotStyle: 'wood',
+    ballType: 'orb'
+};
+
+let projectile = {
+    x: slingshotPos.x, y: slingshotPos.y, radius: 14,
+    vx: 0, vy: 0, isDragging: false, isFlying: false,
+    rotation: 0
+};
+
+let targets = [];
+let particles = [];
+let isTransitioning = false;
+let isGameOver = false;
+
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    W = canvas.width;
+    H = canvas.height;
+
+    slingshotPos = {
+        x: Math.max(80, W * 0.18),
+        y: H * 0.72
+    };
+
+    if (!projectile.isFlying && !projectile.isDragging) {
+        projectile.x = slingshotPos.x;
+        projectile.y = slingshotPos.y;
+    }
+
+    repositionTargets();
+}
+
+function repositionTargets() {
+    if (targets.length === 0) return;
+    const targetX = Math.min(W - 130, W * 0.75);
+    const boxWidth = Math.min(150, Math.max(100, W * 0.18));
+    const boxHeight = Math.min(55, Math.max(40, H * 0.12));
+    
+    const topMargin = H * 0.22;
+    const availableH = H * 0.6;
+    const spacing = availableH / 3;
+
+    targets.forEach((t, i) => {
+        t.x = targetX;
+        t.baseY = topMargin + (i * spacing);
+        t.width = boxWidth;
+        t.height = boxHeight;
+    });
+}
+
+window.addEventListener("resize", resizeCanvas);
+
+function renderLivesUI() {
+    const container = document.getElementById("lives-container");
+    container.innerHTML = "";
+    for (let i = 0; i < maxLives; i++) {
+        const heart = document.createElement("span");
+        heart.className = i < currentLives ? "heart" : "heart lost";
+        heart.innerHTML = "❤️";
+        container.appendChild(heart);
+    }
+}
+
+function initGame() {
+    score = 0;
+    streak = 0;
+    maxStreak = 0;
+    currentLives = maxLives;
+    currentQIndex = 0;
+    isGameOver = false;
+    
+    document.getElementById("val-score").innerText = score;
+    document.getElementById("val-streak").innerText = streak;
+    document.getElementById("gameover-modal").classList.remove("active");
+    
+    resizeCanvas();
+    renderLivesUI();
+    loadQuestion();
+}
+
+function loadQuestion() {
+    isTransitioning = false;
+    const q = questions[currentQIndex];
+    document.getElementById("sentence-card").innerText = q.sentence;
+    
+    targets = [];
+    let shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
+
+    for (let i = 0; i < 3; i++) {
+        targets.push({
+            x: 0,
+            y: 0,
+            baseY: 0,
+            width: 120,
+            height: 45,
+            text: shuffledOptions[i],
+            isCorrect: shuffledOptions[i] === q.answer,
+            floatOffset: Math.random() * Math.PI * 2
+        });
+    }
+    
+    repositionTargets();
+    resetProjectile();
+}
+
+function resetProjectile() {
+    projectile.x = slingshotPos.x;
+    projectile.y = slingshotPos.y;
+    projectile.vx = 0; projectile.vy = 0;
+    projectile.isDragging = false;
+    projectile.isFlying = false;
+    projectile.rotation = 0;
+}
+
+function loseLife(reasonText) {
+    currentLives--;
+    streak = 0;
+    document.getElementById("val-streak").innerText = streak;
+    renderLivesUI();
+
+    if (currentLives <= 0) {
+        isGameOver = true;
+        playSound('gameover');
+        document.getElementById("go-score").innerText = score;
+        document.getElementById("go-streak").innerText = maxStreak;
+        document.getElementById("gameover-modal").classList.add("active");
+    } else {
+        playSound('hit-wrong');
+        showBanner(reasonText, false);
+        setTimeout(() => {
+            resetProjectile();
+            isTransitioning = false;
+        }, 1000);
+    }
+}
+
+function createExplosion(x, y, color) {
+    for (let i = 0; i < 25; i++) {
+        particles.push({
+            x: x, y: y,
+            vx: (Math.random() - 0.5) * 10,
+            vy: (Math.random() - 0.5) * 10,
+            radius: Math.random() * 4 + 2,
+            color: color,
+            alpha: 1
+        });
+    }
+}
+
+function getCanvasCoordinates(e) {
+    const rect = canvas.getBoundingClientRect();
+    let clientX = e.clientX;
+    let clientY = e.clientY;
+    
+    if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+    }
+
+    return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+    };
+}
+
+function handleStart(e) {
+    if (projectile.isFlying || isTransitioning || isGameOver) return;
+    const pos = getCanvasCoordinates(e);
+    if (Math.hypot(pos.x - projectile.x, pos.y - projectile.y) < 60) {
+        projectile.isDragging = true;
+    }
+}
+
+function handleMove(e) {
+    if (!projectile.isDragging) return;
+    const pos = getCanvasCoordinates(e);
+
+    const maxPull = Math.min(100, W * 0.15);
+    const angle = Math.atan2(pos.y - slingshotPos.y, pos.x - slingshotPos.x);
+    const dist = Math.hypot(pos.x - slingshotPos.x, pos.y - slingshotPos.y);
+
+    if (dist > maxPull) {
+        projectile.x = slingshotPos.x + Math.cos(angle) * maxPull;
+        projectile.y = slingshotPos.y + Math.sin(angle) * maxPull;
+    } else {
+        projectile.x = pos.x; 
+        projectile.y = pos.y;
+    }
+}
+
+function handleEnd() {
+    if (!projectile.isDragging) return;
+    projectile.isDragging = false;
+    projectile.isFlying = true;
+    playSound('launch');
+
+    const pullX = slingshotPos.x - projectile.x;
+    const pullY = slingshotPos.y - projectile.y;
+    projectile.vx = pullX * gameConfig.power;
+    projectile.vy = pullY * gameConfig.power;
+}
+
+canvas.addEventListener("mousedown", handleStart);
+canvas.addEventListener("mousemove", handleMove);
+window.addEventListener("mouseup", handleEnd);
+
+canvas.addEventListener("touchstart", (e) => { handleStart(e); e.preventDefault(); }, {passive: false});
+canvas.addEventListener("touchmove", (e) => { handleMove(e); e.preventDefault(); }, {passive: false});
+window.addEventListener("touchend", handleEnd);
+
+function update() {
+    targets.forEach(t => {
+        t.floatOffset += 0.03;
+        t.y = t.baseY + Math.sin(t.floatOffset) * 6;
+    });
+
+    if (projectile.isFlying && !isTransitioning && !isGameOver) {
+        projectile.x += projectile.vx;
+        projectile.y += projectile.vy;
+        projectile.vy += gameConfig.gravity;
+        projectile.rotation += 0.1;
+
+        // Trail effects for fireball
+        if (gameConfig.ballType === 'fire') {
+            particles.push({
+                x: projectile.x, y: projectile.y,
+                vx: (Math.random() - 0.5) * 2,
+                vy: (Math.random() - 0.5) * 2,
+                radius: Math.random() * 5 + 2,
+                color: '#f97316',
+                alpha: 0.8
+            });
+        }
+
+        targets.forEach(target => {
+            if (
+                projectile.x > target.x && projectile.x < target.x + target.width &&
+                projectile.y > target.y && projectile.y < target.y + target.height
+            ) {
+                isTransitioning = true;
+                if (target.isCorrect) {
+                    streak++;
+                    if (streak > maxStreak) maxStreak = streak;
+                    score += 10 + (streak * 2);
+                    playSound('hit-correct');
+                    createExplosion(projectile.x, projectile.y, '#22c55e');
+                    showBanner("Correct!", true);
+
+                    const solvedSentence = questions[currentQIndex].sentence.replace("_____", `[ ${target.text} ]`);
+                    document.getElementById("sentence-card").innerText = solvedSentence;
+
+                    setTimeout(() => {
+                        currentQIndex = (currentQIndex + 1) % questions.length;
+                        loadQuestion();
+                    }, 1400);
+
+                } else {
+                    createExplosion(projectile.x, projectile.y, '#ef4444');
+                    loseLife("Wrong Word!");
+                }
+
+                document.getElementById("val-score").innerText = score;
+                document.getElementById("val-streak").innerText = streak;
+            }
+        });
+
+        if (projectile.x > W || projectile.y > H || projectile.x < 0) {
+            isTransitioning = true;
+            loseLife("Missed!");
+        }
+    }
+
+    particles.forEach((p, idx) => {
+        p.x += p.vx; p.y += p.vy;
+        p.alpha -= 0.02;
+        if (p.alpha <= 0) particles.splice(idx, 1);
+    });
+}
+
+function drawBackground() {
+    let skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+    skyGrad.addColorStop(0, '#0f172a');
+    skyGrad.addColorStop(0.7, '#1e1b4b');
+    skyGrad.addColorStop(1, '#311b92');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.ellipse(W * 0.2, H + 20, W * 0.4, H * 0.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.ellipse(W * 0.8, H + 30, W * 0.5, H * 0.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawTrajectory() {
+    if (!projectile.isDragging || !document.getElementById("set-aim").checked) return;
+    ctx.beginPath();
+    ctx.setLineDash([6, 6]);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+    ctx.lineWidth = 3;
+
+    let simX = projectile.x;
+    let simY = projectile.y;
+    let simVx = (slingshotPos.x - projectile.x) * gameConfig.power;
+    let simVy = (slingshotPos.y - projectile.y) * gameConfig.power;
+
+    ctx.moveTo(simX, simY);
+    for (let i = 0; i < 25; i++) {
+        simX += simVx;
+        simY += simVy;
+        simVy += gameConfig.gravity;
+        ctx.lineTo(simX, simY);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+}
+
+function drawSlingshot(isBack) {
+    const style = gameConfig.slingshotStyle;
+    let mainColor = "#475569";
+    let bandColor = "#f59e0b";
+    let width = 8;
+
+    if (style === 'cyber') {
+        mainColor = "#06b6d4";
+        bandColor = "#22d3ee";
+    } else if (style === 'gold') {
+        mainColor = "#eab308";
+        bandColor = "#ef4444";
+    }
+
+    if (isBack) {
+        // Rear Frame Branch
+        ctx.strokeStyle = mainColor;
+        ctx.lineWidth = width;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(slingshotPos.x - 10, slingshotPos.y - 8);
+        ctx.lineTo(slingshotPos.x, slingshotPos.y + 60);
+        ctx.stroke();
+
+        // Rear Elastic Band
+        if (projectile.isDragging) {
+            ctx.strokeStyle = bandColor;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(slingshotPos.x - 10, slingshotPos.y - 10);
+            ctx.lineTo(projectile.x, projectile.y);
+            ctx.stroke();
+        }
+    } else {
+        // Front Elastic Band
+        if (projectile.isDragging) {
+            ctx.strokeStyle = bandColor;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(slingshotPos.x + 10, slingshotPos.y - 10);
+            ctx.lineTo(projectile.x, projectile.y);
+            ctx.stroke();
+        }
+
+        // Front Frame Branch
+        ctx.strokeStyle = style === 'cyber' ? '#22d3ee' : mainColor;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        ctx.moveTo(slingshotPos.x + 10, slingshotPos.y - 10);
+        ctx.lineTo(slingshotPos.x, slingshotPos.y + 60);
+        ctx.stroke();
+    }
+}
+
+function drawBall() {
+    const type = gameConfig.ballType;
+    ctx.save();
+    ctx.translate(projectile.x, projectile.y);
+    ctx.rotate(projectile.rotation);
+
+    if (type === 'orb') {
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = projectile.isDragging ? 15 : 8;
+        let grad = ctx.createRadialGradient(0, 0, 2, 0, 0, projectile.radius);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.5, '#38bdf8');
+        grad.addColorStop(1, '#0284c7');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(0, 0, projectile.radius, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (type === 'fire') {
+        ctx.shadowColor = '#f97316';
+        ctx.shadowBlur = 15;
+        let grad = ctx.createRadialGradient(0, 0, 2, 0, 0, projectile.radius);
+        grad.addColorStop(0, '#fef08a');
+        grad.addColorStop(0.5, '#f97316');
+        grad.addColorStop(1, '#dc2626');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(0, 0, projectile.radius, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (type === 'coin') {
+        ctx.shadowColor = '#eab308';
+        ctx.shadowBlur = 6;
+        let grad = ctx.createLinearGradient(-10, -10, 10, 10);
+        grad.addColorStop(0, '#fef08a');
+        grad.addColorStop(0.5, '#eab308');
+        grad.addColorStop(1, '#854d0e');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(0, 0, projectile.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fef08a';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+    } else if (type === 'tennis') {
+        ctx.fillStyle = '#84cc16';
+        ctx.beginPath();
+        ctx.arc(0, 0, projectile.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(-5, 0, 8, -Math.PI / 2, Math.PI / 2);
+        ctx.stroke();
+    }
+
+    ctx.restore();
+    ctx.shadowBlur = 0;
+}
+
+function render() {
+    drawBackground();
+    drawTrajectory();
+    
+    drawSlingshot(true);  // Back frame & band
+    drawBall();           // Ball projectile
+    drawSlingshot(false); // Front frame & band
+
+    targets.forEach(t => {
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        ctx.shadowBlur = 8;
+
+        let grad = ctx.createLinearGradient(t.x, t.y, t.x, t.y + t.height);
+        grad.addColorStop(0, '#334155');
+        grad.addColorStop(1, '#1e293b');
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.roundRect(t.x, t.y, t.width, t.height, 10);
+        ctx.fill();
+
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+
+        const fontSize = Math.max(12, Math.min(16, t.height * 0.35));
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = `bold ${fontSize}px system-ui`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(t.text, t.x + t.width / 2, t.y + t.height / 2);
+    });
+
+    particles.forEach(p => {
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    });
+}
+
+function gameLoop() {
+    update();
+    render();
+    requestAnimationFrame(gameLoop);
+}
+
+function showBanner(text, isSuccess) {
+    const banner = document.getElementById("feedback-banner");
+    banner.innerText = text;
+    banner.className = isSuccess ? "show banner-success" : "show banner-error";
+    setTimeout(() => { banner.className = ""; }, 1000);
+}
+
+const settingsModal = document.getElementById("settings-modal");
+document.getElementById("btn-settings").onclick = () => settingsModal.classList.add("active");
+document.getElementById("btn-close-settings").onclick = () => {
+    gameConfig.power = parseFloat(document.getElementById("set-power").value);
+    gameConfig.gravity = parseFloat(document.getElementById("set-gravity").value);
+    gameConfig.slingshotStyle = document.getElementById("set-slingshot").value;
+    gameConfig.ballType = document.getElementById("set-ball").value;
+    
+    const newMaxLives = parseInt(document.getElementById("set-lives").value);
+    if (newMaxLives !== maxLives) {
+        maxLives = newMaxLives;
+        initGame();
+    }
+    
+    settingsModal.classList.remove("active");
+};
+
+document.getElementById("btn-restart").onclick = () => initGame();
+
+initGame();
+gameLoop();
+</script>
+</body>
+</html>
